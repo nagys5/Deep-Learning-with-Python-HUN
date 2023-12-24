@@ -9,6 +9,12 @@
 
 ## Tartalom
 [2. fejezet](chapter02.ipynb)
+[3. fejezet](chapter03.ipynb)
+[4. fejezet (eleje)](chapter04.ipynb)
+
+[8. fejezet (készül)](chapter08.ipynb)
+
+---
 
 Mivel elég lassan gépelek, ezért a fordítást a Google Fordítóval végeztem majd átmásoltam, de utána végigolvastam cellánként és ahol nagyon félreértette vagy nagyon zavaró magyartalanságot írt, ott javítottam. (Bárcsak ilyen kevés helyesírási hiba lenne a fórumokon!) 
 
