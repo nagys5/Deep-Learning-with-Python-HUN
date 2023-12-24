@@ -7,7 +7,7 @@
 
 ---
 
-## Tartalom
+## Tartalomjegyzék
 [2. fejezet](chapter02.ipynb)
 
 [3. fejezet](chapter03.ipynb)
