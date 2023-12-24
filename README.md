@@ -10,11 +10,11 @@
 ## Tartalomjegyzék
 [2. fejezet](chapter02.md)
 
-[3. fejezet](chapter03.ipynb)
+[3. fejezet](chapter03.md)
 
-[4. fejezet (eleje)](chapter04.ipynb)
+[4. fejezet (eleje)](chapter04.md)
 
-[8. fejezet (készül)](chapter08.ipynb)
+[8. fejezet (készül)](chapter08.md)
 
 A GitHub repository [itt érhető el](https://github.com/nagys5/Deep-Learning-with-Python-HUN/tree/main).
 
