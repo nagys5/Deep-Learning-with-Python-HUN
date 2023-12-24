@@ -8,7 +8,7 @@
 ---
 
 ## Tartalomjegyzék
-[2. fejezet](chapter02.html)
+[2. fejezet](chapter02.md)
 
 [3. fejezet](chapter03.ipynb)
 
