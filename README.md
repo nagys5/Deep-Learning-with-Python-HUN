@@ -9,7 +9,9 @@
 
 ## Tartalom
 [2. fejezet](chapter02.ipynb)
+
 [3. fejezet](chapter03.ipynb)
+
 [4. fejezet (eleje)](chapter04.ipynb)
 
 [8. fejezet (készül)](chapter08.ipynb)
