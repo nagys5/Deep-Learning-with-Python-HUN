@@ -14,7 +14,7 @@
 
 [4. fejezet (eleje)](chapter04.md)
 
-[8. fejezet (készül)](chapter08.md)
+[8. fejezet](chapter08.md)
 
 A GitHub repository [itt érhető el](https://github.com/nagys5/Deep-Learning-with-Python-HUN/tree/main).
 
