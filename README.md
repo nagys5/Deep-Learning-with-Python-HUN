@@ -27,4 +27,5 @@ Mivel elég lassan gépelek, ezért a fordítást a Google Fordítóval végezte
 A fordítás notebookja (.ipynb fájlja) a Google Colab-ban készült. 
 
 Egyéb linkek a könyvvel kapcsolatban:
+
 [A szerző repója a Python cellákból](https://github.com/fchollet/deep-learning-with-python-notebooks)
