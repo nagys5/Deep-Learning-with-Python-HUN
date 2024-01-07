@@ -14,7 +14,7 @@ Eddig a képbesorolási modellekre koncentráltunk: egy kép bemegy, egy címke 
 * _Képszegmentálás_ – ahol a cél egy kép „szegmentálása” vagy „felosztása” különböző területekre, ahol minden terület általában egy kategóriát képvisel (amint a 9.1. ábrán látható). Például amikor a Zoom vagy a Google Meet egyéni hátteret jelenít meg mögötted egy videohívásban, akkor egy képszegmentációs modellt használ, hogy pixel pontossággal meg tudja különböztetni az arcot aattól ami mögötte van.
 * _Tárgyérzékelés_ – A cél az, hogy téglalapokat (úgynevezett határolókereteket) rajzoljunk a kép érdekes objektumai köré, és minden téglalapot társítsunk egy osztályhoz. Egy önvezető autó objektumérzékelő modellt használhat például az autók, a gyalogosok és a táblák megfigyelésére a kameráinak a látképei alapján.
 
-![Próba](figs/f9.1_.jpg)
+![osztályozás, szegmentálás, észlelés](figs/f9.1_.jpg)
 
 **9.1. ábra:** A gépi látás három fő feladata: osztályozás, szegmentálás, észlelés
 
@@ -302,5 +302,276 @@ Ekkorra már a 8. fejezetben és a 9. fejezet elején megtanultad a képosztály
 ## 9.3 Modern convnet architektúra minták
 
 A modell „architektúrája” a létrehozásához szükséges választási lehetőségek összessége: mely rétegeket használjuk, hogyan konfiguráljuk őket, és milyen elrendezésben kapcsoljuk össze őket. Ezek a választások határozzák meg a modell _hipotézisterét_: a lehetséges függvények terét, amelyen a gradiens ereszkedés kereshet, a modell súlyaival paraméterezve. A jellemzőtervezéshez hasonlóan a jó hipotézistér az adott problémával és annak megoldásával kapcsolatos _előzetes tudást_ kódolja. Például a konvolúciós rétegek használata azt jelenti, hogy előre tudja, hogy a bemeneti képekben található fontos minták fordításinvariánsak. Ahhoz, hogy hatékonyan tanulhasson az adatokból, feltételezéseket kell készítenie arról, hogy mit keres.
+
+A modellarchitektúra gyakran a különbség a siker és a kudarc között. Ha nem megfelelő architektúrát választ, előfordulhat, hogy a modell elakad a szuboptimális mérőszámoknál, és semmilyen betanítási adat sem fogja megmenteni. Ezzel szemben a jó modellarchitektúra felgyorsítja a tanulást, és lehetővé teszi, hogy a modell hatékonyan használja fel a rendelkezésre álló betanítási adatokat, csökkentve a nagy adathalmazok szükségességét. A jó modellarchitektúra az, amely _csökkenti a keresési terület méretét_, vagy más módon _megkönnyíti a keresési tér egy jó pontjához való konvergálást_. Csakúgy, mint a jellemzőtervezés és az adatkezelés, a modellarchitektúra is arról szól, hogy _egyszerűbbé tegye a problémát_ a gradiensereszkedés megoldásához. És ne feledje, hogy a gradiens süllyedés meglehetősen ostoba keresési folyamat, ezért minden segítségre szüksége van.
+
+A modellépítészet inkább művészet, mint tudomány. A tapasztalt gépi tanulási mérnökök már első próbálkozásukra képesek intuitív módon összeállítani a nagy teljesítményű modelleket, míg a kezdőknek gyakran nehézséget okoz, hogy olyan modellt alkossanak, amely egyáltalán edz. A kulcsszó itt az _intuitív_: senki sem tud egyértelmű magyarázatot adni arra, hogy mi működik és mi nem. A szakértők a mintaillesztésre hagyatkoznak, amely képességre kiterjedt gyakorlati tapasztalat révén sajátítanak el. Ebben a könyvben fejlesztheti saját intuícióját. Azonban nem _minden_ az intuíción múlik – a tényleges tudománynak nincs sok módja, de mint minden mérnöki tudományágban, itt is vannak bevált gyakorlatok.
+
+A következő szakaszokban áttekintünk néhány a gyakorlatban bevált alapvető convnet architektúrát: különösen a maradék kapcsolatokat, a kötegelt normalizálást és az elválasztható konvolúciókat. Miután elsajátította a használatukat, képes lesz rendkívül hatékony képmodelleket készíteni. Alkalmazni is fogjuk ezeket a macska vs. kutya osztályozási problémánkra. {249.o->:}
+
+Kezdjük madártávlatból: a modularitás-hierarchia-újrafelhasználás (MHR) képletével a rendszerarchitektúrához.
+
+### 9.3.1 Modularitás, hierarchia és újrafelhasználás
+
+Ha egyszerűbbé szeretne tenni egy összetett rendszert, van egy univerzális recept, amelyet alkalmazhat: egyszerűen strukturálja _modulokba_ a komplexitás amorf levesét, rendezze a modulokat _hierarchiába_, és kezdje el _újra felhasználni_ ugyanazokat a modulokat több helyen is (az "újrafelhasználás" egy másik szó az _absztrakcióra_ ebben az összefüggésben). Ez az MHR képlet (modularity-hierarchy-reuse), és ez alapozza meg a rendszerarchitektúrát szinte minden olyan tartományban, ahol az „architektúra” kifejezést használják. Bármilyen értelmes komplexitású rendszer szervezetének középpontjában áll, legyen az egy katedrális, a saját tested, az amerikai haditengerészet vagy a Keras kódbázis (lásd a 9.7. ábrát).
+
+![](figs/f9.7_.jpg)
+
+**9.7. ábra:** Az összetett rendszerek hierarchikus struktúrát követnek, és különálló modulokba vannak szervezve, amelyeket többször is felhasználnak (például a négy végtag, amelyek mind ugyanannak a tervnek a változatai, vagy a 20 „ujjad”).
+
+Ha ön szoftvermérnök, akkor már nagyon jól ismeri ezeket az alapelveket: a hatékony kódbázis az, amely moduláris, hierarchikus, és ahol nem hajtja végre ugyanazt a dolgot kétszer, hanem az újrafelhasználható osztályokra és függvényekre hagyatkozik. Ha ezeket az elveket követve szemléli a kódot, akkor azt mondhatja, hogy „szoftverarchitektúrát” csinál.
+
+Maga a mélytanulás egyszerűen ennek a receptnek az alkalmazása a folyamatos optimalizálásra gradiensereszkedés útján: egy klasszikus optimalizálási technikát használ (gradiens süllyedés egy folytonos függvénytéren), és a keresési teret modulokba (rétegekbe) strukturálja, mély hierarchiába rendezve (ami gyakran csak egy verem, a hierarchia legegyszerűbb fajtája), ahol bármit újra felhasználhat (például a konvolúciók ugyanazt az információt különböző térbeli helyeken újra felhasználják).
+
+Hasonlóképpen, a mély tanulási modell-architektúra elsősorban a modularitás, a hierarchia és az újrahasználat okos felhasználásáról szól. Észre fogja venni, hogy az összes népszerű convnet architektúra nem csak rétegekbe, hanem ismétlődő rétegcsoportokba (ezek „blokkok” vagy „modulok”) vannak strukturálva. Például az előző fejezetben használt népszerű VGG16 architektúra ismétlődő „conv, conv, max pooling” blokkokból áll (lásd a 9.8. ábrát).
+
+Ezenkívül a legtöbb convnet gyakran piramisszerű struktúrákat (szolgáltatáshierarchiákat) tartalmaz. Emlékezzünk vissza például az előző fejezetben felépített első convnetben használt konvolúciós szűrők számának alakulására: 32, 64, 128. A szűrők száma a rétegmélységgel nő, míg a jellemzőtérképek mérete ennek megfelelően csökken. Ugyanezt a mintát láthatja a VGG16 modell blokkjaiban (lásd a 9.8. ábrát).
+
+![](figs/f9.8_.jpg)
+
+**9.8 ábra:** A VGG16 architektúra: vegye észre az ismétlődő rétegblokkokat és a jellemzőtérképek piramisszerű szerkezetét
+
+A mélyebb hierarchiák alapvetően jók, mert ösztönzik a funkciók újrafelhasználását, és ezáltal az absztrakciót. Általánosságban elmondható, hogy a keskeny rétegekből álló mély halom jobban teljesít, mint a nagy rétegek sekély halmaza. Az eltűnő színátmenetek problémája miatt azonban korlátozottak a rétegek egymásra halmozásának mélységei. Ez elvezet bennünket az első lényeges modellarchitektúránkhoz: a maradék kapcsolatokhoz.
+
+---
+
+**Az ablációs vizsgálatok fontosságáról a mély tanulás kutatásában**
+
+A mélytanulási architektúrák gyakran inkább _kifejlődtek_, minthogy megtervezték volna – úgy fejlesztették ki őket, hogy többször próbáltak dolgokat, és kiválasztották azt, ami működni látszott. A biológiai rendszerekhez hasonlóan, ha bármilyen bonyolult kísérleti mélytanulási beállítást választ, nagy eséllyel eltávolíthat néhány modult (vagy néhány betanított funkciót véletlenszerűre cserélhet) anélkül, hogy veszítene a teljesítményéből.
+
+Ezt tovább rontják azok az ösztönzők, amelyekkel a mély tanulással foglalkozó kutatók szembesülnek: ha egy rendszert a szükségesnél bonyolultabbá tesznek, érdekesebbé vagy újszerűbbé tehetik azt, és így növelhetik az esélyeiket, hogy a szakértői értékelési folyamaton átjussanak. Ha sok mélyreható tanulmányt elolvas, észre fogja venni, hogy azok gyakran vannak optimalizálva szakértői értékeléshez mind stílusban, mind tartalomban oly módon, hogy az aktívan sérti a magyarázatok egyértelműségét és az eredmények megbízhatóságát. Például a matematikát a mélytanulási dolgozatokban ritkán használják fogalmak egyértelmű formába öntésére vagy nem nyilvánvaló eredmények levezetésére – inkább a _komolyság jelzéseként_ használják, mint a drága öltönyt az eladón.
+
+A kutatás célja ne pusztán publikálás legyen, hanem megbízható tudás létrehozása. Létfontosságú, hogy az ok-okozati összefüggések megértése a rendszerben a legegyszerűbb módja a megbízható tudás létrehozásának. És van egy nagyon kevés erőfeszítést igénylő módszer az ok-okozati összefüggés vizsgálatára: az _ablációs_ vizsgálatok. Az ablációs vizsgálatok abból állnak, hogy szisztematikusan megpróbálják eltávolítani a rendszer egyes részeit – ezzel egyszerűbbé téve azt – annak azonosítására, hogy honnan származik a teljesítménye. Ha úgy találja, hogy az X + Y + Z jó eredményeket ad, próbálkozzon X, Y, Z, X + Y, X + Z és Y + Z esettel is, és nézze meg, mi történik.
+
+Ha mélytanulás-kutató lesz, vágja le a kutatási folyamat zaját: végezzen ablációs vizsgálatokat modelljeihez. Mindig kérdezze meg: „Létezhet-e egyszerűbb magyarázat? Valóban szükséges ez a megnövelt bonyolultság? Miért?"
+
+---
+
+### 9.3.2 Maradék összefüggés
+
+Valószínűleg ismeri a Telephone játékot, amelyet az Egyesült Királyságban kínai suttogásnak, Franciaországban pedig téléphone arabe-nak is neveznek, ahol a kezdeti üzenetet az egyik játékos fülébe suttogják, aki aztán a következő játékos fülébe súgja, és így tovább. Az utolsó üzenet végül alig hasonlít az eredeti verzióhoz. Ez egy szórakoztató metafora a zajos csatornán keresztüli szekvenciális átvitel során fellépő kumulatív hibákra.
+
+Ahogy megtörténik, a szekvenciális mély tanulási modellben a visszaterjesztés, az nagyon hasonlít a Telefonos játékhoz. Van egy függvényláncunk, például ez:
+```
+y = f4(f3(f2(f1(x))))
+```
+A játék neve a lánc egyes függvényei paramétereinek beállítása az f4 kimenetén rögzített hiba (a modell vesztesége) alapján. Az f1 beállításához a hibainformációknak az f2-n, az f3-on és az f4-en keresztül kell átadnia. Mindazonáltal a láncban minden egymást követő függvény bizonyos mennyiségű zajt hoz be. Ha a függvénylánc túl hosszú, ez a zaj elkezdi elnyomni a gradiens információkat, és a visszaterjesztés leáll. A modelled egyáltalán nem fog tanulni. Ez az _eltűnő gradiensek_ problémája.
+
+A javítás egyszerű: csak kényszerítse rá a lánc mindegyik függvényét, hogy legyen roncsolásmentes – hogy megőrizze az előző bemenetben található információ zajtalan változatát. Ennek legegyszerűbb módja a _maradék kapcsolat_ használata. Ez nagyon egyszerű: csak adja hozzá egy réteg vagy rétegblokk bemenetét a kimenethez (lásd a 9.9. ábrát). A maradék kapcsolat _információ gyorsításként_ működik a destruktív vagy zajos blokkok (például a `relu`-aktiválást vagy kihagyási rétegeket tartalmazó blokkok) körül, lehetővé téve a korai rétegekből származó hibagradiens információinak zajtalan terjedését egy mély hálózaton. Ezt a technikát 2015-ben vezették be a ResNet modellcsaláddal (amelyet He et al. fejlesztett ki a Microsoftnál).[1]
+
+---
+
+[1] Kaiming He et al., “Deep Residual Learning for Image Recognition,” Conference on Computer Vision and Pattern Recognition (2015), https://arxiv.org/abs/1512.03385 .
+
+![](figs/f9.9_.jpg)
+
+**9.9. ábra:** Egy feldolgozási blokk körüli maradék kapcsolat
+
+A gyakorlatban a maradék kapcsolatot a következőképpen valósíthatjuk meg.
+
+**9.1 lista: A maradék kapcsolat pszeudokódban**
+
+
+```python
+x = ...                 #<--- Valami bemeneti tenzor
+residual = x            #<--- Mentsen el egy mutatót az eredeti bemenetre. Ezt hívjuk maradéknak.
+x = block(x)            #<--- Ez a számítási blokk potenciálisan romboló vagy zajos lehet, és ez rendben van.
+x = add([x, residual])  #<--- Hozzáadja az eredeti bemenetet a réteg kimenetéhez:
+                        #     a végső kimenet így mindig megőrzi a teljes információt az eredeti bemenetről.
+```
+
+Vegye észre, hogy a bemenet hozzáadása egy blokk kimenetéhez azt jelenti, hogy a kimenetnek ugyanolyan alakúnak kell lennie, mint a bemenetnek. Ez azonban nem így van, ha a blokk konvolúciós rétegeket tartalmaz megnövelt számú szűrővel, vagy max pooling réteget. Ilyen esetekben használjon 1 × 1 `Conv2D` réteget aktiválás nélkül, hogy a maradékot lineárisan a kívánt kimeneti alakra vetítse (lásd a 9.2 listát). Általában a `padding=` `"same"` értéket használunk a célblokk konvolúciós rétegeiben, hogy elkerüljük a kitöltés miatti térbeli lemintavételezést, a maradék vetítésben pedig a lépésköz használatával illeszkedünk a max pooling réteg által okozott lemintavételhez (lásd a 9.3 listát).
+
+**9.2 lista: Maradék blokk, ahol a szűrők száma változik**
+
+
+```python
+from tensorflow import keras
+from tensorflow.keras import layers
+
+inputs = keras.Input(shape=(32, 32, 3))
+x = layers.Conv2D(32, 3, activation="relu")(inputs)
+residual = x                                #<--- Tegyük félre a maradékot.
+x = layers.Conv2D(64, 3, activation="relu", padding="same")(x)  #<--- Ez az a réteg, amely körül maradék kapcsolatot hozunk létre:
+                                                                #     ez 32-ről 64-re növeli a kimeneti file-ok számát.
+                                                                #     Vegye figyelembe, hogy a padding="same"-t használjuk,
+                                                                #     hogy elkerüljük a padding miatti lemintavételezést.
+residual = layers.Conv2D(64, 1)(residual)   #<--- A maradéknak csak 32 szűrője volt, ezért 1 × 1-es Conv2D-t használunk
+                                            #     a megfelelő formára vetítéséhez.
+x = layers.add([x, residual])               #<--- Most a blokk kimenete és a maradék azonos alakú, és összeadható.
+```
+
+**9.3 lista: Az az eset, amikor a célblokk max pooling réteget tartalmaz**
+
+
+```python
+inputs = keras.Input(shape=(32, 32, 3))
+x = layers.Conv2D(32, 3, activation="relu")(inputs)
+residual = x                                #<--- Tegyük félre a maradékot.
+x = layers.Conv2D(64, 3, activation="relu", padding="same")(x)  #<--- Ez az a két rétegből álló blokk, amely körül maradék kapcsolatot
+x = layers.MaxPooling2D(2, padding="same")(x)                   #     hozunk létre: tartalmaz egy 2 × 2 max. pooling réteget.
+                                                                #     Vegye figyelembe, hogy mind a konvolúciós rétegben,
+                                                                #     mind a max pooling rétegben a padding="same" értéket használjuk,
+                                                                #     hogy elkerüljük a padding miatti lemintavételezést.
+residual = layers.Conv2D(64, 1, strides=2)(residual)            #<--- A maradék vetületben strides=2-t használunk, hogy megfeleljen a
+                                                                #     max pooling réteg által létrehozott lemintavételezésnek.
+x = layers.add([x, residual])               #<--- Most a blokk kimenete és a maradék azonos alakú, és összeadható.
+```
+
+Hogy konkrétabbá tegyük ezeket az elképzeléseket, íme egy példa egy egyszerű convnet-re, amely egy sor blokkból áll, amelyek mindegyike két konvolúciós rétegből és egy opcionális max pooling rétegből áll, mindegyik blokk körül egy maradék kapcsolattal:
+
+
+```python
+inputs = keras.Input(shape=(32, 32, 3))
+x = layers.Rescaling(1./255)(inputs)
+
+def residual_block(x, filters, pooling=False):    #<--- Segédfüggvény a konvolúciós blokk alkalmazásához maradék kapcsolattal,
+                                                  #     max pooling hozzáadásának lehetőségével
+    residual = x
+    x = layers.Conv2D(filters, 3, activation="relu", padding="same")(x)
+    x = layers.Conv2D(filters, 3, activation="relu", padding="same")(x)
+    if pooling:
+        x = layers.MaxPooling2D(2, padding="same")(x)
+        residual = layers.Conv2D(filters, 1, strides=2)(residual) #<--- Ha max poolingot használunk, akkor lépésközös konvolúciót
+                                                                  #     adunk hozzá, hogy a maradékot a kívánt alakra vetítsük.
+    elif filters != residual.shape[-1]:
+        residual = layers.Conv2D(filters, 1)(residual)  #<--- Ha nem használunk max poolingot, akkor
+                                                        #     csak akkor vetítjük ki a maradékot, ha a csatornák száma megváltozott.
+    x = layers.add([x, residual])
+    return x
+
+x = residual_block(x, filters=32, pooling=True)     #<--- Első blokk
+x = residual_block(x, filters=64, pooling=True)     #<--- Második blokk; vegye észre a növekvő szűrőszámot mindegyik blokkban.
+x = residual_block(x, filters=128, pooling=False)   #<--- Az utolsó blokkhoz nincs szükség max pooling rétegre,
+                                                    #     mivel közvetlenül utána alkalmazzuk a globális átlag poolingot.
+
+x = layers.GlobalAveragePooling2D()(x)
+outputs = layers.Dense(1, activation="sigmoid")(x)
+model = keras.Model(inputs=inputs, outputs=outputs)
+model.summary()
+```
+
+Ez a modell összefoglalója, amit kapunk:
+
+```
+Model: "model"
+__________________________________________________________________________________________________
+Layer (type)                    Output Shape         Param #     Connected to
+==================================================================================================
+input_1 (InputLayer)            [(None, 32, 32, 3)]  0
+__________________________________________________________________________________________________
+rescaling (Rescaling)           (None, 32, 32, 3)    0           input_1[0][0]
+__________________________________________________________________________________________________
+conv2d (Conv2D)                 (None, 32, 32, 32)   896         rescaling[0][0]
+__________________________________________________________________________________________________
+conv2d_1 (Conv2D)               (None, 32, 32, 32)   9248        conv2d[0][0]
+__________________________________________________________________________________________________
+max_pooling2d (MaxPooling2D)    (None, 16, 16, 32)   0           conv2d_1[0][0]
+__________________________________________________________________________________________________
+conv2d_2 (Conv2D)               (None, 16, 16, 32)   128         rescaling[0][0]
+__________________________________________________________________________________________________
+add (Add)                       (None, 16, 16, 32)   0           max_pooling2d[0][0]
+                                                                 conv2d_2[0][0]
+__________________________________________________________________________________________________
+conv2d_3 (Conv2D)               (None, 16, 16, 64)   18496       add[0][0]
+__________________________________________________________________________________________________
+conv2d_4 (Conv2D)               (None, 16, 16, 64)   36928       conv2d_3[0][0]
+__________________________________________________________________________________________________
+max_pooling2d_1 (MaxPooling2D)  (None, 8, 8, 64)     0           conv2d_4[0][0]
+__________________________________________________________________________________________________
+conv2d_5 (Conv2D)               (None, 8, 8, 64)     2112        add[0][0]
+__________________________________________________________________________________________________
+add_1 (Add)                     (None, 8, 8, 64)     0           max_pooling2d_1[0][0]
+                                                                 conv2d_5[0][0]
+__________________________________________________________________________________________________
+conv2d_6 (Conv2D)               (None, 8, 8, 128)    73856       add_1[0][0]
+__________________________________________________________________________________________________
+conv2d_7 (Conv2D)               (None, 8, 8, 128)    147584      conv2d_6[0][0]
+__________________________________________________________________________________________________
+conv2d_8 (Conv2D)               (None, 8, 8, 128)    8320        add_1[0][0]
+__________________________________________________________________________________________________
+add_2 (Add)                     (None, 8, 8, 128)    0           conv2d_7[0][0]
+                                                                 conv2d_8[0][0]
+__________________________________________________________________________________________________
+global_average_pooling2d (Globa (None, 128)          0           add_2[0][0]
+__________________________________________________________________________________________________
+dense (Dense)                   (None, 1)            129         global_average_pooling2d[0][0]
+==================================================================================================
+Total params: 297,697
+Trainable params: 297,697
+Non-trainable params: 0
+__________________________________________________________________________________________________
+```
+A maradék kapcsolatokkal tetszőleges mélységű hálózatokat építhetünk ki anélkül, hogy aggódni kellene az eltűnő gradiensek miatt.
+
+Most térjünk át a következő alapvető convnet architektúra mintára: a _köteg(elt) normalizálásra_.
+
+### 9.3.3 Kötegelt normalizálás
+
+A _normalizálás_ azon módszerek tág kategóriája, amelyek arra törekszenek, hogy a gépi tanulási modellnek megmutatott különböző minták jobban hasonlítsanak egymásra, ami segít a modellnek megtanulni és jól általánosítani az új adatokat. Az adatnormalizálás legáltalánosabb formája az, amelyet ebben a könyvben már többször is láthattunk: az adatok nullára való központosítása úgy, hogy az átlagot kivonjuk az adatokból, és egységnyi szórást adunk az adatokhoz úgy, hogy az adatokat elosztjuk a szórással. Valójában ez azt feltételezi, hogy az adatok normál (vagy Gauss-) eloszlást követnek, és biztosítja, hogy ez az eloszlás legyen központosítva a 0-ra és átméretezve az egységnyi szórásra:
+```
+normalized_data = (data - np.mean(data, axis=...)) / np.std(data, axis=...)
+```
+A könyv korábbi példái normalizálták az adatokat, mielőtt betáplálták őket a modellekbe. Az adatok normalizálása azonban érdekes lehet minden hálózat által végrehajtott átalakítás után: még ha a `Dense` vagy `Conv2D` hálózatba belépő adatok 0 átlaggal és egységnyi szórással rendelkeznek is, nem lehet eleve elvárni, hogy ez az kiérkező adatok esetében is így legyen. A köztes aktiválások normalizálása segíthet?
+
+A kötegelt normalizálás éppen ezt teszi. Ez is egyfajta réteg (a `BatchNormalization` a Kerasban), amelyet 2015-ben vezetett be az Ioffe és Szegedy;[2] ez képes adaptívan normalizálni az adatokat, még akkor is, ha az átlag és a variancia idővel változik a tanítás során. A betanítás során az aktuális adatköteg átlagát és szórását használja a minták normalizálására, a következtetés során pedig (amikor esetleg nem áll rendelkezésre elég nagy köteg reprezentatív adatokból) a képzés során látott adatok kötegenkénti átlagának és szórásának exponenciális mozgóátlagát használja. {256.o:->}
+
+---
+
+[2] Sergey Ioffe and Christian Szegedy, “Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift,” Proceedings of the 32nd International Conference on Machine Learning (2015), https://arxiv.org/abs/1502.03167.
+
+Bár az eredeti dokumentum azt állította, hogy a kötegelt normalizálás a „belső kovariáns eltolódás csökkentésével” működik, senki sem tudja biztosan, miért segít a kötegelt normalizálás. Vannak különféle hipotézisek, de nincsenek bizonyosságok. Meg fogod tapasztalni, hogy ez sok mindenre igaz a mély tanulásban – a mélytanulás nem egzakt tudomány, hanem állandóan változó, empirikusan levezetett bevált mérnöki gyakorlatok halmaza, amelyeket megbízhatatlan narratívák fűznek össze. Néha úgy fogod érezni, hogy a kezedben lévő könyv megmondja, _hogyan_ kell csinálni valamit, de nem mondja meg kielégítően, hogy _miért_ működik: ez azért van, mert tudjuk, hogyan kell, de nem tudjuk, hogy miért. Ha megbízható magyarázat áll rendelkezésre, mindenképpen megemlítem. A kötegelt normalizálás nem tartozik ezek közé az esetek közé.
+
+A gyakorlatban úgy tűnik, hogy a kötegelt normalizálás fő hatása az, hogy segíti a gradiens terjedését – hasonlóan a maradék kapcsolatokhoz –, és így mélyebb hálózatokat tesz lehetővé. Egyes nagyon mély hálózatokat csak akkor lehet betanítani, ha több `BatchNormalization` réteget tartalmaznak. A kötegelt normalizálást például bőségesen használják a Kerashoz csomagolt fejlett convnet architektúrákban, mint például a ResNet50, az EfficientNet és az Xception.
+
+A `BatchNormalization` réteg bármely réteg után használható – `Dense, Conv2D` stb.:
+```
+x = ...
+x = layers.Conv2D(32, 3, use_bias=False)(x) #<--- Mivel a Conv2D réteg kimenete normalizálódik,
+                                            #     a rétegnek nincs szüksége saját torzítási vektorra.
+x = layers.BatchNormalization()(x)
+```
+
+MEGJEGYZÉS
+>Mind a `Dense`, mind a `Conv2D` tartalmaz torzítási (eltolási) vektort, egy tanult változót, amelynek az a célja, hogy a réteget affinná, nem pedig tisztán lineárissá tegye. Például a `Conv2D` vázlatosan az `y = conv(x, kernel) + bias`-t adja vissza, a `Dense` pedig az `y = pont(x, kernel) + bias`-t. Mivel a normalizálási lépés gondoskodik arról, hogy a réteg kimenet központja nullára kerüljön, az eltolási vektorra már nincs szükség `BatchNormalization` használatakor, és a réteg nélküle is létrehozható a `use_bias=False` paraméterrel. Ettől a réteg kissé karcsúbb lesz.
+
+Fontos, hogy általában azt javaslom, hogy az előző réteg aktiválását a kötegelt normalizálási réteg után helyezze el (bár ez még mindig vita tárgya). Tehát ahelyett, hogy azt tenné, ami a 9.4-es listában látható, inkább a 9.5-ös listában leírtakat tegye.
+
+**9.4. lista: Hogyan ne használjuk a kötegelt normalizálást**
+
+
+```python
+x = layers.Conv2D(32, 3, activation="relu")(x)
+x = layers.BatchNormalization()(x)
+```
+
+**9.5. lista: Így használjuk a kötegelt normalizálást: az aktiválás az utolsó**
+
+
+```python
+x = layers.Conv2D(32, 3, use_bias=False)(x)   #<--- Vegye észre az aktiválás hiányát.
+x = layers.BatchNormalization()(x)
+x = layers.Activation("relu")(x)    #<--- Az aktiválást a BatchNormalization réteg után helyezzük el.
+```
+
+Ennek a megközelítésnek az intuitív oka, hogy a kötegelt normalizálás a bemeneteket nullára állítja, míg a `relu` aktiválása nullát használ az aktivált csatornák megtartásához vagy eldobásához: az aktiválás előtti normalizálás maximalizálja a `relu` kihasználását. Ennek ellenére ez a sorrendre bevált gyakorlat nem éppen kritikus, így ha konvolúciót, majd aktiválást, majd kötegelt normalizálást végez, a modell továbbra is betanítható, és nem feltétlenül fog rosszabb eredményeket kapni.
+
+---
+
+**A kötegelt normalizálásról és finomhangolásról**
+
+>A kötegelt normalizálásnak számos furcsasága van. Az egyik fő ilyen a finomhangoláshoz kapcsolódik: `BatchNormalization` rétegeket tartalmazó modell finomhangolásakor azt javaslom, hogy ezeket a rétegeket hagyjuk fagyasztva (a `trainable` attribútumot állítsuk `False` értékre). Ellenkező esetben folyamatosan frissítik belső átlagukat és szórásukat, ami megzavarhatja a környező `Conv2D` rétegekre alkalmazott nagyon kis frissítéseket.
+
+---
+
+Most pedig vessünk egy pillantást sorozatunk utolsó szerkezeti mintájára: a mélységben szétválasztható konvolúcióra.
+
+### 9.3.4 Mélységben szétválasztható konvolúciók
+
+Mi lenne, ha azt mondanám, hogy van egy réteg, amelyet a `Conv2D` helyettesítőjeként használhatsz, és amely kisebbé (kevesebb betanítható súlyparaméter) és karcsúbbá (kevesebb lebegőpontos művelet) teszi a modelledet, és néhány százalékponttal jobban teljesíti a feladatát? Pontosan ezt teszi a _mélységben szétválasztható konvolúciós_ réteg (a `SeparableConv2D` a Kerasban). Ez a réteg minden bemeneti csatornán térbeli konvolúciót hajt végre, függetlenül, mielőtt a kimeneti csatornákat pontszerű konvolúcióval (1 × 1 konvolúcióval) összekeverné, amint az a 9.10. ábrán látható.
+
+![](figs/f9.10_.jpg)
+
+**9.10. ábra:** Mélységben szétválasztható konvolúció: mélységi konvolúció, majd pontszerű konvolúció
 
 
