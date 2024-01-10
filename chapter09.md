@@ -560,7 +560,7 @@ Ennek a megközelítésnek az intuitív oka, hogy a kötegelt normalizálás a b
 
 **A kötegelt normalizálásról és finomhangolásról**
 
->A kötegelt normalizálásnak számos furcsasága van. Az egyik fő ilyen a finomhangoláshoz kapcsolódik: `BatchNormalization` rétegeket tartalmazó modell finomhangolásakor azt javaslom, hogy ezeket a rétegeket hagyjuk fagyasztva (a `trainable` attribútumot állítsuk `False` értékre). Ellenkező esetben folyamatosan frissítik belső átlagukat és szórásukat, ami megzavarhatja a környező `Conv2D` rétegekre alkalmazott nagyon kis frissítéseket.
+>A kötegelt normalizálásnak számos furcsasága van. Az egyik fő ilyen a finomhangoláshoz kapcsolódik: `BatchNormalization` rétegeket tartalmazó modell finomhangolásakor azt javaslom, hogy ezeket a rétegeket hagyjuk befagyasztva (a `trainable` attribútumot állítsuk `False` értékre). Ellenkező esetben folyamatosan frissítik belső átlagukat és szórásukat, ami megzavarhatja a környező `Conv2D` rétegekre alkalmazott nagyon kis frissítéseket.
 
 ---
 
@@ -574,4 +574,730 @@ Mi lenne, ha azt mondanám, hogy van egy réteg, amelyet a `Conv2D` helyettesít
 
 **9.10. ábra:** Mélységben szétválasztható konvolúció: mélységi konvolúció, majd pontszerű konvolúció
 
+Ez egyenértékű a térbeli jellemzők tanulásának és a csatorna szerinti jellemzők tanulásának szétválasztásával. Ugyanúgy, ahogy a konvolúció arra a feltételezésre támaszkodik, hogy a képek mintái nincsenek meghatározott helyekhez kötve, a mélységben szétválasztható konvolúció azon a feltételezésen alapul, hogy a közbenső aktiválások _térbeli elhelyezkedése_ _erősen korrelál_, de a _különböző csatornák_ _nagymértékben függetlenek_. Mivel ez a feltevés általában igaz a mély neurális hálózatok által tanult képreprezentációkra, hasznos előzetesként szolgál, amely segít a modellnek a betanítási adatok hatékonyabb felhasználásában. Az a modell, amely erősebb prioritásokkal rendelkezik a feldolgozandó információ szerkezetére vonatkozóan, jobb modell – mindaddig, amíg a korábbiak pontosak.
 
+A mélységben szétválasztható konvolúció lényegesen kevesebb paramétert és kevesebb számítást igényel a reguláris konvolúcióhoz képest, miközben összehasonlítható reprezentációs ereje van. Kisebb modelleket eredményez, amelyek gyorsabban konvergálnak, és kevésbé hajlamosak a túltanulásra. Ezek az előnyök különösen akkor válnak fontossá, ha kis modelleket oktatunk a semmiből, korlátozott adatokon.
+
+Ha nagyobb méretű modellekről van szó, a mélységben szétválasztható konvolúciók képezik az Xception architektúra alapját, amely egy olyan nagy teljesítményű convnet, amely a Keras csomaggal érkezik. A mélységben szétválasztható konvolúciók és az Xception elméleti megalapozásáról az „Xception: Deep Learning with Depthwise Separable Convolutions”[3] című cikkben olvashat bővebben.
+
+---
+
+[3] François Chollet, “Xception: Deep Learning with Depthwise Separable Convolutions,” Conference on Computer
+Vision and Pattern Recognition (2017), https://arxiv.org/abs/1610.02357.
+
+---
+
+**Hardverek, szoftverek és algoritmusok együttes fejlődése**
+
+>Vegyünk egy szabályos konvolúciós műveletet 3 × 3 ablakkal, 64 bemeneti csatornával és 64 kimeneti csatornával. 3\*3\*64\*64 = 36 864 betanítható paramétert használ, és amikor egy képre alkalmazza, számos lebegőpontos műveletet futtat, amelyek arányosak ezzel a paraméterszámmal. Eközben vegyünk egy ekvivalens mélységben szétválasztható konvolúciót: csak 3\*3\*64 + 64\*64 = 4672 betanítható paramétert és arányosan kevesebb lebegőpontos műveletet tartalmaz. Ez a hatékonyságnövekedés csak a szűrők számának vagy a konvolúciós ablakok méretének növekedésével nő.
+
+>Ennek eredményeként azt várná, hogy a mélységben szétválasztható konvolúciók drámaian gyorsabbak legyenek, igaz? Kitartás. Ez igaz lenne, ha ezeknek az algoritmusoknak az egyszerű CUDA- vagy C-megvalósításait írnád – valójában jelentős felgyorsulást tapasztalsz, ha CPU-n futsz, ahol az alapul szolgáló implementáció párhuzamos C. A gyakorlatban azonban valószínűleg GPU-t használsz, és amit futtatsz rajta, az messze nem egy „egyszerű” CUDA-megvalósítás: ez egy _cuDNN kernel_, egy rendkívül optimalizált kódrészlet, egészen az egyes gépi utasításokig. Minden bizonnyal érdemes sok erőfeszítést tenni ennek a kódnak a optimalizálására, mivel az NVIDIA hardverén lévő cuDNN konvolúciók felelősek a napi sok exaFLOPS számításért. Ennek az extrém mikrooptimalizálásnak azonban az a mellékhatása, hogy az alternatív megközelítéseknek kevés esélyük van versenyezni a teljesítményben – még olyan megközelítéseknek is, amelyek jelentős belső előnyökkel rendelkeznek, mint például a mélységben szétválasztható konvolúciók. {259.o:->}
+
+>Az NVIDIA-hoz intézett ismételt kérések ellenére a mélységben szétválasztható konvolúciók nem részesültek közel sem olyan szintű szoftver- és hardveroptimalizálásból, mint a hagyományos konvolúciók, és ennek eredményeként csak körülbelül olyan gyorsak maradnak, mint a szokásos konvolúciók, annak ellenére, hogy négyzetesen kevesebb paramétert és lebegőpontos műveletet használnak. Megjegyzendő azonban, hogy a mélységben szétválasztható konvolúciók használata akkor is jó ötlet, ha az nem eredményez gyorsulást: kevesebb paraméterszámuk azt jelenti, hogy kisebb a túltanulás kockázata, és az a feltételezésük, hogy a csatornáknak nem kell korrelálniuk, gyorsabb modellkonvergenciát és robusztusabb megjelenést eredményez.
+
+>Ami ebben az esetben enyhe kényelmetlenséget jelent, az más helyzetekben áthatolhatatlan falat jelenthet: mivel a mélytanulás teljes hardver- és szoftver-ökoszisztémáját mikrooptimalizálták egy nagyon specifikus algoritmuskészletre (különösen a visszaterjesztéssel betanított convnetekre), rendkívül nagy költséget jelent a kitaposott útról való letérés. Ha alternatív algoritmusokkal kísérleteznél, mint például a gradiensmentes optimalizálás vagy a spiking neurális hálózatok, az első néhány párhuzamos C++ vagy CUDA implementáció nagyságrendekkel lassabb lenne, mint egy jó öreg convnet, bármilyen ügyes és hatékony ötleteid voltak is. Más kutatókat meggyőzni, hogy alkalmazzák a módszeredet; nehéz lenne eladni, még akkor is, ha egyszerűen csak jobb lenne.
+
+>Mondhatnánk, hogy a modern mélytanulás a hardver, a szoftver és az algoritmusok koevolúciós folyamatának eredménye: az NVIDIA GPU-k és a CUDA elérhetősége a visszaterjesztéssel kiképzett convnetek korai sikeréhez vezetett, ami arra késztette az NVIDIA-t, hogy optimalizálja hardverét és szoftverét ezekhez az algoritmusokhoz, ami viszont a módszerek mögött álló kutatói közösség megszilárdulásához vezetett. Ezen a ponton egy másik út kitalálásához az egész ökoszisztéma többéves újratervezésére lenne szükség.
+
+---
+
+### 9.3.5 Összeállítás: Egy mini Xception-szerű modell
+
+Emlékeztetőül, itt vannak a convnet architektúra alapelvei, amelyeket eddig megtanult:
+* A modelljét ismétlődő _rétegblokkokba_ kell rendezni, amelyek általában több konvolúciós rétegből és egy max-összevonási rétegből állnak.
+* A rétegekben lévő szűrők számának növekednie kell, ahogy a térbeli jellemzőtérképek mérete csökken.
+* A mély és a keskeny jobb, mint a széles és sekély.
+* A rétegblokkok körüli maradék kapcsolatok bevezetése segít mélyebb hálózatok képzésében.
+* Előnyös lehet kötegelt normalizálási rétegek bevezetése a konvolúciós rétegek után.
+* Előnyös lehet a `Conv2D` rétegek lecserélése `SeparableConv2D` rétegekre, amelyek paraméter-hatékonyabbak.
+
+Foglaljuk össze ezeket az ötleteket egyetlen modellben. Architektúrája az Xception kisebb verziójához fog hasonlítani, és alkalmazzuk is az utolsó fejezetben szereplő kutyák vs. macskák feladatra. Az adatok betöltéséhez és a modell betanításához egyszerűen újra felhasználjuk a 8.2.5 szakaszban használt beállítást, de a modelldefiníciót a következő convnetre cseréljük:
+
+
+```python
+inputs = keras.Input(shape=(180, 180, 3))
+x = data_augmentation(inputs)             #<--- Ugyanazt az adatkiegészítési konfigurációt használjuk, mint korábban.
+
+x = layers.Rescaling(1./255)(x)           #<--- Ne felejtse el a bemenet átméretezését!
+x = layers.Conv2D(filters=32, kernel_size=5, use_bias=False)(x) #<--- Vegye észre, hogy az elválasztható konvolúció
+                                                                #     alapjául szolgáló feltevés, miszerint
+                                                                #     „a szolgáltatáscsatornák nagymértékben függetlenek”,
+                                                                #     az RGB-képek esetében nem érvényesül!
+                                                                #     A piros, zöld és kék színcsatornák valójában
+                                                                #     erősen korrelálnak a természetes képeken. Mint ilyen,
+                                                                #     modellünk első rétege egy normál Conv2D réteg.
+                                                                #     Ezt követően kezdjük el használni a SeparableConv2D-t.
+
+for size in [32, 64, 128, 256, 512]:      #<--- Egy sor konvolúciós blokkot alkalmazunk növekvő jellemzőmélységgel.
+                                          #     Minden blokk két szakaszosan normalizált, mélységben szétválasztható
+                                          #     konvolúciós rétegből és egy max pooling rétegből áll,
+                                          #     maradék kapcsolattal a teljes blokk körül.
+    residual = x
+
+    x = layers.BatchNormalization()(x)
+    x = layers.Activation("relu")(x)
+    x = layers.SeparableConv2D(size, 3, padding="same", use_bias=False)(x)
+
+    x = layers.BatchNormalization()(x)
+    x = layers.Activation("relu")(x)
+    x = layers.SeparableConv2D(size, 3, padding="same", use_bias=False)(x)
+
+    x = layers.MaxPooling2D(3, strides=2, padding="same")(x)
+
+    residual = layers.Conv2D(
+        size, 1, strides=2, padding="same", use_bias=False)(residual)
+    x = layers.add([x, residual])
+
+x = layers.GlobalAveragePooling2D()(x)    #<--- Az eredeti modellben egy Flatten réteget használtunk a sűrű réteg előtt.
+                                          #     Itt egy GlobalAveragePooling2D réteget használunk.
+x = layers.Dropout(0.5)(x)                #<--- Az eredeti modellhez hasonlóan a szabályozás miatt hozzáadunk egy kiejtő réteget.
+outputs = layers.Dense(1, activation="sigmoid")(x)
+model = keras.Model(inputs=inputs, outputs=outputs)
+```
+
+Ennek a convnetnek 721 857 betanítható paramétere van, valamivel kevesebb, mint az eredeti modell 991 041 tanítható paramétere, de még mindig ugyanazon a pályán. A 9.11. ábra mutatja a betanítási és érvényesítési görbéit.
+
+![](figs/f9.11_.jpg)
+
+**9.11. ábra:** Betanítási és érvényesítési mérőszámok Xception-szerű architektúránál
+
+Látni fogja, hogy új modellünk 90,8%-os tesztpontosságot ér el, szemben az előző fejezet naiv modelljének 83,5%-ával. Mint látható, az architektúra bevált szokásainak követése azonnali, jelentős hatással van a modell teljesítményére!
+
+Ezen a ponton, ha tovább szeretné javítani a teljesítményt, el kell kezdenie szisztematikusan hangolni az architektúrája hiperparamétereit – ezt a témát a 13. fejezetben részletesen fogjuk tárgyalni. Itt még nem mentünk végig ezen a lépésen, így az előző modell pusztán az általunk már megvitatott legjobb gyakorlatokon alapul, plusz, ha a modell méretének méréséről van szó, egy kis intuíción alapul.
+
+Vegye figyelembe, hogy ezek a bevált architektúra-gyakorlatok általában a gépi látásra vonatkoznak, nem csak a képosztályozásra. Például az Xceptiont szabványos konvolúciós alapként használják a DeepLabV3-ban, amely egy népszerű és korszerű képszegmentációs megoldás.[4]
+
+Ezzel el is értünk a legfontosabb convnet architektúrák bevált gyakorlatainak végéhez. Ezekkel az elvekkel a kézben tud majd nagyobb teljesítményű modelleket fejleszteni a gépi látási feladatok széles körében. Jó úton halad afelé, hogy gyakorlott gépi látást végző szakemberré váljon. Szakértelmének további elmélyítéséhez még egy fontos témát kell érintenünk: annak megfejtését, hogy egy modell hogyan jut el az előrejelzésekhez.
+
+---
+
+[4] Liang-Chieh Chen et al., “Encoder-Decoder with Atrous Separable Convolution for Semantic Image Segmentation,” ECCV (2018), https://arxiv.org/abs/1802.02611.
+
+## 9.4 A convnet által tanultak értelmezése
+
+A gépi látási alkalmazás elkészítésekor alapvető probléma az értelmezhetőség: miért gondolta az osztályozója, hogy egy adott képen hűtőszekrény található, miközben csak egy teherautót lát? Ez különösen fontos olyan felhasználási esetekben, amikor a mély tanulást az emberi szakértelem kiegészítésére használják, például az orvosi képalkotó felhasználási esetekben. Ezt a fejezetet azzal zárjuk, hogy megismertetjük önnel a különböző technikák széles skáláját, amelyek segítségével megjelenítheti, mit tanulnak a convnet-ek, és képes lesz megérteni az általuk hozott döntéseket.
+
+Gyakran mondják, hogy a mély tanulási modellek „fekete dobozok”: olyan reprezentációkat tanulnak meg, amelyeket nehéz kinyerni és ember által olvasható formában bemutatni. Bár ez részben igaz a mély tanulási modellek bizonyos típusaira, határozottan nem igaz a convnetekre. A convnetek által megtanult reprezentációk nagyon alkalmasak a vizualizációra, nagyrészt azért, mert vizuális fogalmak reprezentációi. 2013 óta technikák széles skáláját fejlesztették ki e reprezentációk megjelenítésére és értelmezésére. Nem fogjuk mindegyiket felmérni, de a három legelérhetőbb és leghasznosabbat ismertetjük:
+* _Köztes convnet kimenetek (köztes aktiválások) megjelenítése_ – Hasznos annak megértéséhez, hogy az egymást követő convnet rétegek hogyan alakítják át bemenetüket, és hogy első képet kapjunk az egyes convnet szűrők jelentéséről
+* _Convnet szűrők megjelenítése_ – Hasznos annak pontos megértéséhez, hogy a convnet egyes szűrői milyen vizuális mintára vagy koncepcióra képesek.
+* _Osztályaktiválás hőtérképeinek megjelenítése egy képen_ – Hasznos annak megértéséhez, hogy a kép mely részeit azonosították egy adott osztályhoz tartozóként, így lehetővé teszi az objektumok lokalizálását a képeken
+
+Az első módszerhez – az aktiválási vizualizációhoz – azt a kis konvnetet fogjuk használni, amelyet a 8.2-es szakaszban a kutyák kontra macskák osztályozási problémájára a semmiből képeztünk ki. A következő két módszerhez egy előre betanított Xception modellt fogunk használni.
+
+### 9.4.1 Közbenső aktiválások megjelenítése
+
+A közbenső aktiválások megjelenítése abból áll, hogy egy modellben megjelenítjük a különböző konvolúciós és pooling rétegek által visszaadott értékeket egy bizonyos bemenet mellett (egy réteg kimenetét gyakran hívják _aktiválásnak_, az aktiválási függvény kimenetének). Ez képet ad arról, hogy egy bemenet hogyan bomlik fel a hálózat által megtanult különböző szűrőkre. Három dimenzióval szeretnénk megjeleníteni a tereptárgytérképeket: szélesség, magasság és mélység (csatornák). Mindegyik csatorna viszonylag független jellemzőket kódol, ezért ezeknek a jellemzőtérképeknek a megfelelő módja az, hogy minden csatorna tartalmát egymástól függetlenül ábrázoljuk 2D-s képként. Kezdjük a 8.2 szakaszban mentett modell betöltésével:
+
+```
+>>> from tensorflow import keras
+>>> model = keras.models.load_model(
+    "convnet_from_scratch_with_augmentation.keras")
+>>> model.summary()
+```
+
+```
+Model: "model_1"
+_________________________________________________________________
+Layer (type)                 Output Shape              Param #
+=================================================================
+input_2 (InputLayer)         [(None, 180, 180, 3)]     0
+_________________________________________________________________
+sequential (Sequential)      (None, 180, 180, 3)       0
+_________________________________________________________________
+rescaling_1 (Rescaling)      (None, 180, 180, 3)       0
+_________________________________________________________________
+conv2d_5 (Conv2D)            (None, 178, 178, 32)      896
+_________________________________________________________________
+max_pooling2d_4 (MaxPooling2 (None, 89, 89, 32)        0
+_________________________________________________________________
+conv2d_6 (Conv2D)            (None, 87, 87, 64)        18496
+_________________________________________________________________
+max_pooling2d_5 (MaxPooling2 (None, 43, 43, 64)        0
+_________________________________________________________________
+conv2d_7 (Conv2D)            (None, 41, 41, 128)       73856
+_________________________________________________________________
+max_pooling2d_6 (MaxPooling2 (None, 20, 20, 128)       0
+_________________________________________________________________
+conv2d_8 (Conv2D)            (None, 18, 18, 256)       295168
+_________________________________________________________________
+max_pooling2d_7 (MaxPooling2 (None, 9, 9, 256)         0
+_________________________________________________________________
+conv2d_9 (Conv2D)            (None, 7, 7, 256)         590080
+_________________________________________________________________
+flatten_1 (Flatten)          (None, 12544)             0
+_________________________________________________________________
+dropout (Dropout)            (None, 12544)             0
+_________________________________________________________________
+dense_1 (Dense)              (None, 1)                 12545
+=================================================================
+Total params: 991,041
+Trainable params: 991,041
+Non-trainable params: 0
+_________________________________________________________________
+```
+
+Ezután egy bemeneti képet kapunk – egy macskáról készült képet, nem pedig azoknak a képeknek a részét, amelyekre a hálózatot betanították.
+
+**9.6 lista: Egyetlen kép előfeldolgozása**
+
+
+```python
+from tensorflow import keras
+import numpy as np
+
+img_path = keras.utils.get_file(                            #<--- Letöltünk egy tesztképet.
+    fname="cat.jpg",                                        #
+    origin="https://img-datasets.s3.amazonaws.com/cat.jpg") #
+
+def get_img_array(img_path, target_size):
+    img = keras.utils.load_img(                             #<--- Nyissuk meg a képfájlt, és méretezzük át.
+        img_path, target_size=target_size)                  #
+    array = keras.utils.img_to_array(img)                   #<--- Alakítsuk át a képet egy (180, 180, 3)
+                                                            #     alakú float32 NumPy tömbbé.
+    array = np.expand_dims(array, axis=0)                   #<--- Adjunk hozzá egy dimenziót, hogy a tömböt egyetlen minta
+                                                            #     „kötegévé” alakítsuk. Az alakja most (1, 180, 180, 3).
+    return array
+
+img_tensor = get_img_array(img_path, target_size=(180, 180))
+```
+
+Jelenítsük meg a képet (lásd a 9.12. ábrát).
+
+**9.7 lista: A tesztkép megjelenítése**
+
+
+```python
+import matplotlib.pyplot as plt
+plt.axis("off")
+plt.imshow(img_tensor[0].astype("uint8"))
+plt.show()
+```
+
+A megtekinteni kívánt jellemzőtérképek kinyerése érdekében létrehozunk egy Keras-modellt, amely képek kötegeit veszi át bemenetként, és amely kiadja az összes konvolúciós és gyűjtőréteg aktiválását. {264.o:->}
+
+![](figs/f9.12_.jpg)
+
+**9.12. ábra:** A teszt macskakép
+
+**9.8 lista: Rétegaktiválásokat visszaadó modell példányosítása**
+
+
+```python
+from tensorflow.keras import layers
+
+layer_outputs = []
+layer_names = []
+for layer in model.layers:                                      #<--- Bontsuk ki az összes Conv2D és MaxPooling2D réteg kimenetét,
+    if isinstance(layer, (layers.Conv2D, layers.MaxPooling2D)): #     és helyezze őket egy listába.
+        layer_outputs.append(layer.output)                      #
+        layer_names.append(layer.name)                                    #<--- Mentsük el a rétegneveket későbbre.
+activation_model = keras.Model(inputs=model.input, outputs=layer_outputs) #<--- Hozzunk létre egy modellt, amely visszaadja ezeket
+                                                                          #     a kimeneteket a modell bemenetének függvényében.
+```
+
+Amikor képbemenettel tápláljuk, ez a modell listaként adja vissza az eredeti modellben szereplő rétegaktiválások értékeit. Ez az első alkalom, hogy a gyakorlatban találkozott több kimenetes modellel ebben a könyvben, mióta a 7. fejezetben megismerte őket; eddig az ön által látott modellek pontosan egy bemenettel és egy kimenettel rendelkeztek. Ennek egy bemenete és kilenc kimenete van: rétegaktiválásonként egy kimenet.
+
+**9.9 lista: A modell használata rétegaktiválások kiszámítására**
+
+
+```python
+activations = activation_model.predict(img_tensor)  #<--- Kilenc NumPy tömbből álló lista visszaadása:
+                                                    #     rétegaktiválásonként egy tömb.
+```
+
+Például ez az első konvolúciós réteg aktiválása a macskakép bemenethez:
+
+```
+>>> first_layer_activation = activations[0]
+>>> print(first_layer_activation.shape)
+(1, 178, 178, 32)
+```
+Ez egy 178 × 178-as jellemzőtérkép 32 csatornával. Próbáljuk meg felrajzolni az eredeti modell első rétege aktiválásának ötödik csatornáját (lásd a 9.13. ábrát).
+
+**9.10 lista: Az ötödik csatorna megjelenítése**
+
+
+```python
+import matplotlib.pyplot as plt
+plt.matshow(first_layer_activation[0, :, :, 5], cmap="viridis")
+```
+
+![](figs/f9.13_.jpg)
+
+**9.13. ábra:** Az első réteg aktiválásának ötödik csatornája a teszt macskaképen
+
+Úgy tűnik, hogy ez a csatorna egy átlós élérzékelőt kódol, de vegye figyelembe, hogy a saját csatornái változhatnak, mivel a konvolúciós rétegek által megtanult szűrők nem determinisztikusak.
+
+Most rajzoljuk meg a hálózat összes aktiválásának teljes megjelenítését (lásd a 9.14. ábrát). Minden egyes rétegaktiválásnál kibontjuk és ábrázoljuk az összes csatornát, az eredményeket pedig egy nagy rácsba halmozzuk, a csatornákat pedig egymás mellé rakjuk.
+
+**9.11 lista: Minden csatorna megjelenítése minden közbenső aktiválásban**
+
+
+```python
+images_per_row = 16
+for layer_name, layer_activation in zip(layer_names, activations):  #<--- Iteráljunk az aktiválásokon (és a megfelelő rétegek nevein).
+    n_features = layer_activation.shape[-1]                         #<--- A rétegaktiválás alakja (1, size, size, n_features).
+    size = layer_activation.shape[1]                                #
+    n_cols = n_features // images_per_row
+    display_grid = np.zeros(((size + 1) * n_cols - 1,           #<--- Készítsünk elő egy üres rácsot az összes csatorna
+                             images_per_row * (size + 1) - 1))  #     megjelenítéséhez ebben az aktiválásban.
+    for col in range(n_cols):
+        for row in range(images_per_row):
+            channel_index = col * images_per_row + row
+            channel_image = layer_activation[0, :, :, channel_index].copy() #<--- Ez egyetlen csatorna (vagy jellemző).
+            if channel_image.sum() != 0:                                    #<--- A csatornaértékek normalizálása
+                channel_image -= channel_image.mean()                       #     a [0, 255] tartományon belül.
+                channel_image /= channel_image.std()                        #     Az összes nulla csatorna nullán marad.
+                channel_image *= 64                                         #
+                channel_image += 128                                        #
+            channel_image = np.clip(channel_image, 0, 255).astype("uint8")  #
+            display_grid[
+                col * (size + 1): (col + 1) * size + col,                   #<--- Helyezze a csatornamátrixot
+                row * (size + 1) : (row + 1) * size + row] = channel_image  #     az általunk készített üres rácsba.
+    scale = 1. / size                                         #<--- Jelenítse meg a réteg rácsát.
+    plt.figure(figsize=(scale * display_grid.shape[1],        #
+                        scale * display_grid.shape[0]))       #
+    plt.title(layer_name)                                     #
+    plt.grid(False)                                           #
+    plt.axis("off")                                           #
+    plt.imshow(display_grid, aspect="auto", cmap="viridis")   #
+```
+
+![](figs/f9.14_.jpg)
+
+**9.14. ábra:** Minden rétegaktiválás minden csatornája a teszt macskaképen
+
+Itt érdemes megjegyezni néhány dolgot:
+* Az első réteg különböző élérzékelők gyűjteményeként működik. Ebben a szakaszban az aktiválások szinte az összes információt megőrzik, amely a kezdeti képen található.
+* Ahogy mélyebbre megyünk, az aktiválások egyre elvontabbá és vizuálisan kevésbé értelmezhetőbvé válnak. Elkezdik kódolni az olyan magasabb szintű fogalmakat, mint a „macskafül” és a „macskaszem”. A mélyebb bemutatók egyre kevesebb információt hordoznak a kép vizuális tartalmáról, és egyre több a kép osztályához kapcsolódó információ.
+* Az aktiválások ritkasága a réteg mélységével növekszik: az első rétegben szinte minden szűrőt aktivál a bemeneti kép, de a következő rétegekben egyre több szűrő üres. Ez azt jelenti, hogy a szűrő által kódolt minta nem található a bemeneti képen.
+
+Az imént igazoltuk a mély neurális hálózatok által tanult megjelenések egy fontos univerzális jellemzőjét: a rétegek által kinyert jellemzők a réteg mélységével egyre absztraktabbá válnak. A magasabb rétegek aktiválásai egyre kevesebb információt hordoznak a látott konkrét bemenetről, és egyre több információt a célról (jelen esetben a kép osztályáról: macska vagy kutya). A mély neurális hálózat hatékonyan működik _információdesztilláló csővezetékként_, ahol a nyers adatok (jelen esetben RGB-képek) mennek be, és ismételten átalakulnak, így kiszűrik a nem fontos információkat (például a kép sajátos vizuális megjelenését), és a hasznos információkat felnagyítja illetve finomítja (például a kép osztályát).
+
+Ez analóg azzal, ahogyan az emberek és az állatok érzékelik a világot: egy jelenet néhány másodperces megfigyelése után az ember emlékszik, hogy milyen absztrakt tárgyak voltak benne (bicikli, fa), de nem emlékszik ezeknek a tárgyaknak a konkrét megjelenésére. Valójában, ha megpróbált emlékezetből lerajzolni egy általános kerékpárt, nagy valószínűséggel még távolról sem tudta helyesen megcsinálni, pedig több ezer kerékpárt látott már élete során (lásd például a 9.15. ábrát). Próbáld ki most: ez a hatás teljesen valódi. Az agy megtanulta teljesen absztrahálni a vizuális bemenetet – magas szintű vizuális fogalmakká alakítani, miközben kiszűri a nem fontos vizuális részleteket –, ami rendkívül nehézzé teszi a körülötted lévő dolgok kinézetére való emlékezést.
+
+![](figs/f9.15_.jpg)
+
+**9.15. ábra:** Balra: az emlékezetből megrajzolni próbált kerékpár. Jobbra: amilyennek egy sematikus kerékpárnak lennie kell.
+
+### 9.4.2 Convnet szűrők megjelenítése
+
+A convnets által megtanult szűrők ellenőrzésének másik egyszerű módja annak a vizuális mintának a megjelenítése, amelyre az egyes szűrőknek reagálniuk kell. Ez megtehető _gradiens emelkedéssel a bemeneti térben_: _gradiens ereszkedés_ alkalmazása a convnet bemeneti képének értékére, hogy _maximalizálja_ egy adott szűrő válaszát, egy üres bemeneti képből kiindulva. Az eredményül kapott bemeneti kép olyan lesz, amelyre a kiválasztott szűrő maximálisan reagál.
+
+Próbáljuk meg ezt az Xception modell ImageNeten előképzett szűrőivel. A folyamat egyszerű: felállítunk egy veszteségfüggvényt, amely maximalizálja egy adott szűrő értékét egy adott konvolúciós rétegben, majd sztochasztikus gradiens süllyedés segítségével állítsuk be a bemeneti kép értékeit úgy, hogy maximalizáljuk ezt az aktiválási értéket. Ez lesz a második példánk a `GradientTape` objektumot kihasználó alacsony szintű gradiens süllyedési hurokra (az első a 2. fejezetben volt).
+
+Először is példányosítsunk egy olyan Xception-modellt, amely az ImageNet adatkészleten előképzett súlyokkal van "megterhelve".
+
+**9.12 lista: Az Xception konvolúciós alap példányosítása**
+
+
+```python
+model = keras.applications.xception.Xception(
+    weights="imagenet",
+    include_top=False)    #<--- Az osztályozási rétegek ebben a felhasználási esetben nem fontosak,
+                          #     ezért a modell legfelső szakaszát nem vesszük figyelembe.
+```
+
+A modell konvolúciós rétegei érdekelnek bennünket – a `Conv2D` és a `SeparableConv2D` rétegek. Tudnunk kell a nevüket, hogy visszakereshessük a kimeneteiket. Nyomtassuk ki a nevüket, mélységi sorrendben.
+
+**9.13 lista: Az Xception modell összes konvolúciós rétege nevének kinyomtatása**
+
+
+```python
+for layer in model.layers:
+    if isinstance(layer, (keras.layers.Conv2D, keras.layers.SeparableConv2D)):
+        print(layer.name)
+```
+
+Észre fogja venni, hogy az itt található `SeparableConv2D` rétegek elnevezése pl. `block6_sepconv1`, `block7_sepconv2` stb. Az Xception blokkokra épül, amelyek mindegyike több konvolúciós réteget tartalmaz.
+
+Most pedig hozzunk létre egy második modellt, amely egy adott réteg kimenetét adja vissza – egy _jellemzőkivonó_ modellt. Mivel a modellünk egy Funkcionális API-modell, megvizsgálható: le tudjuk kérdezni az egyik rétegének _kimenetét_, és újra felhasználhatjuk egy új modellben. Nem kell átmásolni a teljes Xception kódot. {269.o:->}
+
+**9.14 lista: A jellemzőkivonó modell létrehozása**
+
+
+```python
+layer_name = "block3_sepconv1"    #<--- Ezt lecserélheti az Xception konvolúciós alapban lévő bármely réteg nevére.
+layer = model.get_layer(name=layer_name)    #<--- Ez az a rétegobjektum, amely minket érdekel.
+feature_extractor = keras.Model(inputs=model.input, outputs=layer.output) #<--- A model.input és a layer.output segítségével
+                                                                          #     olyan modellt hozunk létre, amely
+                                                                          #     egy bemeneti kép alapján a célrétegünk
+                                                                          #     kimenetét adja vissza.
+```
+
+Ennek a modellnek a használatához egyszerűen hívja meg azt néhány bemeneti adattal (megjegyzendő, hogy az Xception elvárja a bemenetek előfeldolgozását a `keras.applications.xception.preprocess_input` függvényen keresztül).
+
+**9.15 lista: A jellemzőkivonó használata**
+
+
+```python
+activation = feature_extractor(
+    keras.applications.xception.preprocess_input(img_tensor)
+)
+```
+
+Használjuk a jellemzőkivonó modellünket egy olyan függvény definiálására, amely skaláris értéket ad vissza, amely számszerűsíti, hogy egy adott bemeneti kép mennyire „aktiválja” az adott szűrőt a rétegben. Ez a „veszteség függvény”, amelyet maximalizálunk a gradiens emelkedési folyamat során:
+
+
+```python
+import tensorflow as tf
+
+def compute_loss(image, filter_index):    #<--- A veszteségfüggvény átvesz egy képtenzort
+                                          #     és a vizsgált szűrő indexét (egy egész számot).
+    activation = feature_extractor(image)
+    filter_activation = activation[:, 2:-2, 2:-2, filter_index] #<--- Ne feledje: hogy elkerüljük a szegély hibafoltjait,
+                                                                #     csak a nem-szegély képpontokat vonjuk be a veszteségbe;
+                                                                #     eldobjuk az első két pixelt az aktiválás oldalai mentén.
+    return tf.reduce_mean(filter_activation)    #<--- Visszaadjuk a szűrő aktiválási értékeinek átlagát.
+```
+
+---
+
+**A `model.predict(x)` és a `model(x)` közötti különbség**
+
+Az előző fejezetben a `predict(x)`-et használtuk a jellemzők kinyerésére. Itt a `model(x)`-et használjuk. Mi az oka?
+
+Mind az `y = model.predict(x)`, mind az `y = modell(x)` (ahol `x` a bemeneti adatok tömbje) azt jelenti, hogy „futtassa le a modellt `x`-re, és kérje le az `y` kimenetet”. Mégsem teljesen ugyanazok.
+
+A `predict()` ciklusok kötegenként haladnak át az adatokon (sőt, a köteg méretét a `predict(x, batch_size=64)` paranccsal meg is adhatjuk), és ez kivonja a kimenetek NumPy értékét. Sematikusan ezzel egyenértékű:
+
+
+```python
+def predict(x):
+    y_batches = []
+    for x_batch in get_batches(x):
+        y_batch = model(x).numpy()
+        y_batches.append(y_batch)
+    return np.concatenate(y_batches)
+```
+
+Ez azt jelenti, hogy a `predict()` hívások nagyon nagy tömbökre skálázhatók. Eközben a `model(x)` a memóriában fut le, és nem méreteződik. Másrészt, a `predict()` nem differenciálható: a gradiensét nem lehet lekérni, ha `GradientTape` hatókörben hívjuk meg.
+
+Használja a `model(x)`-et, ha a modellhívás gradienseit kell lekérnie, és használja a `predict()`-et, ha csak a kimeneti értékre van szüksége. Más szóval, mindig használja a `predict()` függvényt, kivéve, ha éppen egy alacsony szintű gradiens ereszkedési ciklust ír (mint most).
+
+---
+
+Állítsuk be a gradiens emelkedési lépés függvényt a `GradientTape` segítségével. Jegyezze meg, hogy a `@tf.function` dekorátort fogjuk használni a gyorsításához.
+
+Egy nem nyilvánvaló trükk a gradiens ereszkedés folyamatának zökkenőmentes lebonyolítására az, hogy normalizáljuk a gradiens tenzort úgy, hogy elosztjuk az L2 normájával (a tenzorban lévő értékek négyzetes átlagának négyzetgyökével). Ez biztosítja, hogy a bemeneti képen végrehajtott frissítések nagysága mindig ugyanabban a tartományban legyen.
+
+**9.16. lista: Veszteségmaximalizálás sztochasztikus gradiens emelkedés révén**
+
+
+```python
+@tf.function
+def gradient_ascent_step(image, filter_index, learning_rate):
+    with tf.GradientTape() as tape:
+        tape.watch(image)                         #<--- Kifejezetten ügyeljen a kép tenzorára, mivel az nem
+                                                  #     egy TensorFlow változó (csak a változókat figyeli
+                                                  #     a rendszer automatikusan a gradiens szalagon).
+        loss = compute_loss(image, filter_index)  #<--- Kiszámítja a veszteség skalárt, jelezve,
+                                                  #     hogy a jelenenlegi kép mennyire aktiválja a szűrőt.
+    grads = tape.gradient(loss, image)            #<--- Számítsa ki a képre vonatkozó veszteség gradienseit.
+    grads = tf.math.l2_normalize(grads)           #<--- Alkalmazza a „gradiens normalizálási trükköt”.
+    image += learning_rate * grads                #<--- Mozgatja a képet egy kicsit olyan irányba,
+                                                  #     amely erősebben aktiválja a célszűrőnket.
+    return image                                  #<--- Visszaadjuk a frissített képet,
+                                                  #     hogy a step függvényt ciklusban tudjuk futtatni.
+```
+
+Most megvan az összes darab. Állítsuk össze őket egy Python-függvénnyel, amely bemenetként egy rétegnevet és egy szűrőindexet vesz át, és egy olyan tenzort ad vissza, amely azt a mintát reprezentálja, amely maximalizálja a megadott szűrő aktiválását.
+
+**9.17 lista: Függvény a szűrővizualizációk generálására**
+
+
+```python
+img_width = 200
+img_height = 200
+
+def generate_filter_pattern(filter_index):
+    iterations = 30                           #<--- Az alkalmazni kívánt gradiens emelkedési lépések száma
+    learning_rate = 10.                       #<--- Egyetlen lépés amplitúdója
+    image = tf.random.uniform(
+        minval=0.4,
+        maxval=0.6,
+        shape=(1, img_width, img_height, 3))  #<--- Inicializálunk egy képtenzort véletlenszerű értékekkel
+                                              #     (az Xception modell a [0, 1] tartományban várja a bemeneti értékeket,
+                                              #     ezért itt egy 0.5-ös középpontú tartományt választunk).
+    for i in range(iterations):                                           #<--- Ismételten frissítjük a képtenzor értékeit,
+        image = gradient_ascent_step(image, filter_index, learning_rate)  #     hogy maximalizáljuk a veszteségfüggvényünket.
+    return image[0].numpy()
+```
+
+Az eredményül kapott képtenzor egy (200, 200, 3) alakú lebegőpontos tömb, amelynek értékei nem lehetnek [0, 255]-ön belüli egészek. Ezért ezt a tenzort utólag kell feldolgoznunk, hogy megjeleníthető képpé alakítsuk. Ezt a következő egyszerű segédfüggvénnyel tesszük.
+
+**9.18 lista: Segédfüggvény a tenzor érvényes képpé konvertálásához**
+
+
+```python
+def deprocess_image(image):
+    image -= image.mean()                           #<--- Normalizáljuk a képértékeket a [0, 255] tartományon belülre.
+    image /= image.std()                            #
+    image *= 64                                     #
+    image += 128                                    #
+    image = np.clip(image, 0, 255).astype("uint8")  #
+    image = image[25:-25, 25:-25, :]                #<--- Levágjuk a széleit, hogy elkerüljük a szegély hibafoltjait.
+    return image
+```
+
+Próbáljuk ki (lásd a 9.16. ábrát):
+
+```
+>>> plt.axis("off")
+>>> plt.imshow(deprocess_image(generate_filter_pattern(filter_index=2)))
+```
+
+![](figs/f9.16_.jpg)
+
+**9.16. ábra:** Minta, amelyre a `block3_sepconv1` réteg második csatornája maximálisan reagál
+
+Úgy tűnik, hogy a `block3_sepconv1` réteg 0-s szűrője olyan vízszintes vonalmintázatra reagál, ami kissé vízszerű vagy szőrmeszerű.
+Most jön a mókás rész: elkezdhetjük megjeleníteni a réteg minden szűrőjét, sőt a modell minden rétegében lévő összes szűrőt is.
+
+**9.19 lista: Rács létrehozása az összes szűrő válaszmintájáról egy rétegben**
+
+
+```python
+all_images = []                                 #<--- A réteg első 64 szűrője vizualizációinak létrehozása és mentése.
+for filter_index in range(64):
+    print(f"Processing filter {filter_index}")
+    image = deprocess_image(
+        generate_filter_pattern(filter_index)
+    )
+    all_images.append(image)
+
+margin = 5      #<--- Előkészítünk egy üres vásznat, amelyre beilleszthetjük a szűrővizualizációkat.
+n = 8
+cropped_width = img_width - 25 * 2
+cropped_height = img_height - 25 * 2
+width = n * cropped_width + (n - 1) * margin
+height = n * cropped_height + (n - 1) * margin
+stitched_filters = np.zeros((width, height, 3))
+
+for i in range(n):          #<--- Töltsük ki a képet az elmentett szűrőkkel.
+    for j in range(n):
+        image = all_images[i * n + j]
+        stitched_filters[
+            row_start = (cropped_width + margin) * i
+            row_end = (cropped_width + margin) * i + cropped_width
+            column_start = (cropped_height + margin) * j
+            column_end = (cropped_height + margin) * j + cropped_height
+
+            stitched_filters[
+                row_start: row_end,
+                column_start: column_end, :] = image
+keras.utils.save_img(                                         #<--- Mentsük a vásznat a lemezre.
+    f"filters_for_layer_{layer_name}.png", stitched_filters)
+```
+
+Ezek a szűrővizualizációk (lásd a 9.17. ábrát) sokat elárulnak arról, hogy a convnet rétegek hogyan látják a világot: a convnet minden rétege megtanulja a szűrők gyűjteményét, így a bemeneteiket a szűrők kombinációjaként lehet kifejezni. Ez hasonló ahhoz, ahogy a Fourier-transzformáció a jeleket koszinuszfüggvények sorozatára bontja. Ezekben a convnet szűrősorokban lévő szűrők egyre bonyolultabbá és finomabbá válnak, ahogy egyre mélyebbre megyünk a modellben:
+* A modell első rétegeiből származó szűrők egyszerű irányított éleket és színeket kódolnak (vagy bizonyos esetekben színes éleket).
+* A halomban kicsit feljebb lévő rétegekből származó szűrők, mint például a `block4_sepconv1`, egyszerű textúrákat kódolnak, amelyek élek és színek kombinációjából készülnek.
+* A magasabb (a fordító megj.: a kimenethez közelebb lévő) rétegekben lévő szűrők kezdenek hasonlítani a természetes képeken található textúrákhoz: tollak, szemek, levelek stb.
+
+![](figs/f9.17_.jpg)
+
+**9.17. ábra:** Néhány szűrőminta a `block2_sepconv1, block4_sepconv1` és `block8_sepconv1` rétegekhez
+
+###9.4.3 Az osztály aktiválás hőtérképeinek megjelenítése
+
+Bemutatunk még egy vizualizációs technikát – egy olyan technikát, amely hasznos annak megértéséhez, hogy egy adott kép mely részei vezettek a convnet végső osztályozási döntéséhez. Ez hasznos a convnet döntési folyamatának „hibakeresésében”, különösen osztályozási hiba esetén (ez a _modell értelmezhetőségének_ nevezett problématartomány). Ez azt is lehetővé teheti, hogy meghatározott objektumokat keressünk a képen.
+
+A technikák ezen általános kategóriáját _osztályaktivációs térkép_ (CAM = class activation map) megjelenítésnek nevezik, és az osztályaktiválás hőtérképeinek a bemeneti képeken való létrehozásából áll. Az osztályaktiválási hőtérkép egy adott kimeneti osztályhoz tartozó pontszámok 2D-s rácsa, amely bármely bemeneti kép minden helyére kiszámításra kerül, jelezve, hogy az egyes helyek mennyire fontosak az adott osztály szempontjából. Például egy kutya-macskák convnetbe betáplált kép esetén a CAM-vizualizáció lehetővé teszi, hogy hőtérképet hozzon létre a „macska” osztály számára, jelezve, hogy a kép különböző részei mennyire macskaszerűek, valamint egy hőtérképet a „kutya” osztály számára, jelezve, hogy a képnek mennyire vannak kutyaszerű részei.
+
+Az általunk használt konkrét megvalósítás a „Grad-CAM: Vizuális magyarázatok mély hálózatokról gradiens alapú lokalizáción keresztül” című cikkben található.[5]
+
+---
+
+[5] Ramprasaath R. Selvaraju et al., arXiv (2017), https://arxiv.org/abs/1610.02391.
+
+A Grad-CAM abból áll, hogy felveszi egy konvolúciós réteg kimeneti jellemzőtérképét egy bemeneti képpel kapcsolatban, és az adott jellemzőtérképen lévő minden csatornát az osztály csatornához viszonyított gradiensével súlyozza. Ezen trükk intuitív módon való megértésének egyik módja az, ha elképzeljük, hogy azt a térbeli térképet, hogy „a bemeneti kép milyen intenzíven aktiválja a különböző csatornákat” azzal súlyozzuk, hogy „mennyire fontosak az egyes csatornák az osztály szempontjából”, ennek egy olyan térbeli térkép lesz az eredménye, hogy "milyen intenzíven aktiválja a bemeneti kép az osztályt."
+
+Mutassuk be ezt a technikát az előre betanított Xception modell segítségével.
+
+**9.20 lista: Az Xception hálózat előképzett súlyokkal való betöltése**
+
+
+```python
+model = keras.applications.xception.Xception(weights="imagenet")  #<--- Ne feledje, hogy a sűrűn kapcsolt osztályozót
+                                                                  #     a tetejére helyezzük; minden korábbi esetben elvetettük.
+```
+
+Tekintsük a 9.18. ábrán látható két afrikai elefánt képét, esetleg egy anyát és a borjút, amint a szavannán sétálnak. Alakítsuk át ezt a képet olyasvalamivé, amit az Xception modell is tud olvasni: a modellt 299 × 299 méretű képekre képezték, amelyeket néhány olyan szabály szerint előfeldolgoztak, amelyek a `keras.applications.xception.preprocess_input` segédprogramba vannak becsomagolva. Tehát be kell töltenünk a képet, át kell méreteznünk 299 × 299-re, át kell alakítanunk NumPy `float32` tenzorrá, és alkalmazni kell ezeket az előfeldolgozási szabályokat.
+
+**9.21 lista: Bemeneti kép előfeldolgozása az Xception számára**
+
+
+```python
+img_path = keras.utils.get_file(
+    fname="elephant.jpg",
+    origin="https://img-datasets.s3.amazonaws.com/elephant.jpg")  #<--- Töltse le a képet, és tárolja helyben az
+                                                                  #     img_path elérési útvonalon.
+def get_img_array(img_path, target_size):
+    img = keras.utils.load_img(img_path, target_size=target_size) #<--- 299 × 299 méretű Python Imaging Library (PIL)
+                                                                  #     képet adjon vissza.
+    array = keras.utils.img_to_array(img)                         #<--- Adjon vissza egy (299, 299, 3) alakú float32 NumPy tömböt.
+    array = np.expand_dims(array, axis=0)                         #<--- Adjon hozzá egy dimenziót a tömb (1, 299, 299, 3)
+                                                                  #     méretű köteggé alakítása végett.
+    array = keras.applications.xception.preprocess_input(array)   #<--- A köteg előfeldolgozása
+                                                                  #     (ez csatorna szerinti színnormalizálást végez).
+    return array
+
+img_array = get_img_array(img_path, target_size=(299, 299))
+```
+
+![](figs/f9.18_.jpg)
+
+**9.18. ábra:** Tesztkép afrikai elefántokról
+
+Most már futtathatja az előre betanított hálózatot a képen, és visszafejtheti a predikciós vektort egy ember által olvasható formátumba:
+
+```
+>>> preds = model.predict(img_array)
+>>> print(keras.applications.xception.decode_predictions(preds, top=3)[0])
+[("n02504458", "African_elephant", 0.8699266),
+ ("n01871265", "tusker", 0.076968715),
+ ("n02504013", "Indian_elephant", 0.02353728)]
+```
+
+A képhez előre jelzett három legjobb osztály a következő:
+* Afrikai elefánt (87%-os valószínűséggel)
+* Tusker (7%-os valószínűséggel)
+* Indiai elefánt (2%-os valószínűséggel)
+
+A hálózat felismerte, hogy a kép meghatározatlan mennyiségű afrikai elefántot tartalmaz. A predikciós vektor maximálisan aktivált bejegyzése az „afrikai elefánt” osztálynak felel meg a 386-os indexnél:
+
+```
+>>> np.argmax(preds[0])
+386
+```
+Annak megjelenítéséhez, hogy a kép mely részei a leginkább afrikai elefántszerűek, állítsuk be a Grad-CAM folyamatot.
+Először létrehozunk egy modellt, amely a bemeneti képet leképezi az utolsó konvolúciós réteg aktiválásaira.
+
+**9.22 lista: Az utolsó konvolúciós kimenetet visszaadó modell beállítása**
+
+
+```python
+last_conv_layer_name = "block14_sepconv2_act"
+classifier_layer_names = [
+    "avg_pool",
+    "predictions",
+]
+last_conv_layer = model.get_layer(last_conv_layer_name)
+last_conv_layer_model = keras.Model(model.inputs, last_conv_layer.output)
+```
+
+Másodszor, létrehozunk egy modellt, amely leképezi az utolsó konvolúciós réteg aktiválásait a végső osztály-előrejelzésekre.
+
+**9.23. lista: Az osztályozó újbóli alkalmazása az utolsó konvolúciós kimenet tetején**
+
+
+```python
+classifier_input = keras.Input(shape=last_conv_layer.output.shape[1:])
+x = classifier_input
+for layer_name in classifier_layer_names:
+    x = model.get_layer(layer_name)(x)
+classifier_model = keras.Model(classifier_input, x)
+```
+
+Ezután kiszámítjuk a bemeneti képünk legfelső előrejelzett osztályának gradiensét az utolsó konvolúciós réteg aktiválásaihoz képest.
+
+**9.24. lista: A legjobb előrejelzett osztály gradienseinek lekérése**
+
+
+```python
+import tensorflow as tf
+
+with tf.GradientTape() as tape:
+    last_conv_layer_output = last_conv_layer_model(img_array)   #<--- Számítsa ki az utolsó konv. réteg aktiválásait,
+    tape.watch(last_conv_layer_output)                          #     és nézzessük meg a szalaggal.
+    preds = classifier_model(last_conv_layer_output)            #<--- Keressük ki a legjobb előre jelzett osztálynak
+                                                                #     megfelelő aktiválási csatornát.
+    top_pred_index = tf.argmax(preds[0])                        #
+    top_class_channel = preds[:, top_pred_index]                #
+
+grads = tape.gradient(top_class_channel, last_conv_layer_output)  #<--- Ez a legjobb előre jelzett osztály gradiense az utolsó
+                                                                  #     konvolúciós réteg kimeneti jellemzőtérképét tekintve.
+```
+
+Most a gradienstenzorra összevonást és fontossági súlyozást alkalmazunk, hogy megkapjuk az osztályaktiválás hőtérképét.
+
+**9.25 lista: Gradiens pooling és csatorna-fontossági súlyozás**
+
+
+```python
+pooled_grads = tf.reduce_mean(grads, axis=(0, 1, 2)).numpy()  #<--- Ez egy olyan vektor, ahol minden egyes bejegyzés
+                                                              #     egy adott csatorna gradiensének átlagos intenzitása.
+                                                              #     Számszerűsíti az egyes csatornák fontosságát
+                                                              #     a legjobb előre jelzett osztály tekintetében.
+last_conv_layer_output = last_conv_layer_output.numpy()[0]
+for i in range(pooled_grads.shape[-1]):                       #<--- Az utolsó konvolúciós réteg kimenetének minden csatornáját
+    last_conv_layer_output[:, :, i] *= pooled_grads[i]        #     megszorozzuk azzal, hogy „mennyire fontos ez a csatorna”.
+heatmap = np.mean(last_conv_layer_output, axis=-1)            #<--- A kapott jellemzőtérkép csatorna szerinti átlaga
+                                                              #     az osztályaktiválás hőtérképe.
+```
+
+Vizualizálás céljából a hőtérképet is normalizáljuk 0 és 1 között. Az eredményt a 9.19. ábra mutatja.
+
+**9.26 lista: Hőtérkép utófeldolgozás**
+
+
+```python
+heatmap = np.maximum(heatmap, 0)
+heatmap /= np.max(heatmap)
+plt.matshow(heatmap)
+```
+
+![](figs/f9.19_.jpg)
+
+**9.19. ábra:** Különálló osztályaktiválási hőtérkép
+
+Végül készítsünk egy képet, amely az eredeti képet az imént kapott hőtérképre helyezi (lásd a 9.20. ábrát).
+
+**9.27 lista: A hőtérkép rárakása az eredeti képre**
+
+
+```python
+import matplotlib.cm as cm
+
+img = keras.utils.load_img(img_path)    #<--- Töltse be az eredeti képet.
+img = keras.utils.img_to_array(img)     #
+
+heatmap = np.uint8(255 * heatmap)       #<--- Méretezze át a hőtérképet 0–255 tartományra.
+
+jet = cm.get_cmap("jet")                #<--- A hőtérkép újraszínezéséhez használja a "jet" színtérképet.
+jet_colors = jet(np.arange(256))[:, :3] #
+jet_heatmap = jet_colors[heatmap]       #
+
+jet_heatmap = keras.utils.array_to_img(jet_heatmap)           #<--- Hozzon létre egy képet,
+jet_heatmap = jet_heatmap.resize((img.shape[1], img.shape[0]))#     amely tartalmazza az újraszínezett hőtérképet.
+jet_heatmap = keras.utils.img_to_array(jet_heatmap)           #
+
+superimposed_img = jet_heatmap * 0.4 + img                    #<--- Rakja egymásra a hőtérképet és az eredeti képet úgy,
+superimposed_img = keras.utils.array_to_img(superimposed_img) #     hogy a hőtérképnek 40%-os átlátszatlansága legyen.
+
+save_path = "elephant_cam.jpg"          #<--- Mentse el az egymásra helyezett képet.
+superimposed_img.save(save_path)        #
+```
+
+![](figs/f9.20_.jpg)
+
+**9.20. ábra:** Afrikai elefánt osztály aktiválási hőtérképe a tesztkép felett
+
+Ez a vizualizációs technika két fontos kérdésre ad választ:
+* Miért gondolta a hálózat, hogy ezen a képen afrikai elefánt van?
+* Hol található a képen látható afrikai elefánt?
+
+Különösen érdekes megjegyezni, hogy az elefántborjú fülei erősen aktiválódnak: valószínűleg így tud a hálózat különbséget tenni az afrikai és az indiai elefántok között.
+
+##**Összegzés**
+
+* Három alapvető gépi látási feladatot tudunk elvégezni a mélytanulás során: képosztályozás, képszegmentálás és tárgyészlelés.
+* A modern convnet architektúra bevált gyakorlatainak követése segít a legtöbbet kihozni a modellekből. A legjobb gyakorlatok közé tartozik a maradék kapcsolatok használata, a kötegelt normalizálás és a mélységben szétválasztható konvolúciók.
+* A convnetek által megtanult reprezentációk könnyen ellenőrizhetők – a convnet a fekete dobozok ellentéte!
+* Létrehozhatja a convnetjei által megtanult szűrők vizualizációit, valamint az osztályaktiválásékenység hőtérképét.
+
+
+```python
+
+```
