@@ -1,4 +1,4 @@
-# Mesterséges intelligencia könyv
+## Mesterséges intelligencia könyv
 *François Chollet - Deep Learning with Python (2021) 2nd Ed*
 
 ### A szerzőről
@@ -16,7 +16,7 @@
 
 [8. fejezet](chapter08.md)
 
-[9. fejezet (készül)](chapter09.md)
+[9. fejezet)](chapter09.md)
 
 A GitHub repository [itt érhető el](https://github.com/nagys5/Deep-Learning-with-Python-HUN/tree/main).
 
