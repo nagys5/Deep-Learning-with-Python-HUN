@@ -3,17 +3,18 @@
 Ez a fejezet ezekkel foglalkozik:
 * Első példa a neurális hálózatra
 * Tenzorok és tenzorműveletek
-* Hogyan tanulnak a neurális hálózatok a visszaszaporítás és a gradiens süllyedés útján
+* Hogyan tanulnak a neurális hálózatok a visszaterjesztés és a gradiens ereszkedés útján
 
-A mély tanulás megértéséhez sok egyszerű matematikai fogalom ismerete szükséges: tenzorok, tenzorműveletek, differenciálás, gradiens süllyedés stb. Ebben a fejezetben az lesz a célunk, hogy kiépítsük az intuíciót ezekkel a fogalmakkal kapcsolatban anélkül, hogy túlzottan technikai jellegűvé válnánk. Különösen kerüljük a matematikai jelölést, amely szükségtelen akadályokat állíthat fel azok számára, akik nem rendelkeznek matematikai háttérrel, és nem szükséges jól elmagyarázni a dolgokat. A matematikai műveletek legpontosabb, legegyértelműbb leírása a végrehajtható kód.
-Ahhoz, hogy elegendő kontextust biztosítsunk a tenzorok és a gradiens süllyedés bemutatásához, a fejezetet egy neurális hálózat gyakorlati példájával kezdjük. Ezután minden bevezetett új koncepciót pontról pontra átnézünk. Ne feledje, hogy ezek a fogalmak nélkülözhetetlenek lesznek a következő fejezetekben található gyakorlati példák megértéséhez!
+A mélytanulás megértéséhez sok egyszerű matematikai fogalom ismerete szükséges: tenzorok, tenzorműveletek, differenciálás, gradiens ereszkedés stb. Ebben a fejezetben az lesz a célunk, hogy kiépítsük az intuíciót ezekkel a fogalmakkal kapcsolatban anélkül, hogy túlzottan technikai jellegűvé válnánk. Különösen kerüljük a matematikai jelölést, amely szükségtelen akadályokat állíthat fel azok számára, akik nem rendelkeznek matematikai háttérrel, és nem szükséges jól elmagyarázni a dolgokat. A matematikai műveletek legpontosabb, legegyértelműbb leírása a végrehajtható kód.
+Ahhoz, hogy elegendő kontextust biztosítsunk a tenzorok és a gradiens ereszkedés bemutatásához, a fejezetet egy neurális hálózat gyakorlati példájával kezdjük. Ezután minden bevezetett új koncepciót pontról pontra átnézünk. Ne feledje, hogy ezek a fogalmak nélkülözhetetlenek lesznek a következő fejezetekben található gyakorlati példák megértéséhez!
 
 {27.o:}
-Miután elolvasta ezt a fejezetet, intuitív módon megérti a mély tanulás mögött meghúzódó matematikai elméletet, és készen áll arra, hogy a 3. fejezetben belemerüljön a Keras és a TensorFlow témakörbe.
+Miután elolvasta ezt a fejezetet, intuitív módon megérti a mélytanulás mögött meghúzódó matematikai elméletet, és készen áll arra, hogy a 3. fejezetben belemerüljön a Keras és a TensorFlow témakörbe.
 
 ## 2.1. Első pillantás egy neurális hálózatra
-Nézzünk egy konkrét példát egy neurális hálózatra, amely a Python Keras könyvtárat használja a kézzel írt számjegyek osztályozásának megtanulására. Hacsak nincs már tapasztalata a Keras vagy hasonló könyvtárakkal kapcsolatban, nem fog azonnal mindent megérteni erről az első példáról. Rendben van. A következő fejezetben a példa minden elemét áttekintjük, és részletesen elmagyarázzuk. Tehát ne aggódjon, ha egyes lépések önkényesnek vagy varázslatosnak tűnnek számodra! Valahol el kell kezdenünk.
-A probléma, amit itt próbálunk megoldani, az, hogy a kézzel írt számjegyek (28 × 28 pixeles) szürkeárnyalatos képeit a 10 kategóriájukba (0-tól 9-ig) soroljuk. A gépi tanulási közösség klasszikusának számító MNIST adatkészletet fogjuk használni, amely majdnem olyan régóta létezik, mint maga a terület, és intenzíven tanulmányozták. Ez egy 60 000 képzési képből és 10 000 tesztképből álló készlet, amelyet a National Institute of Standards and Technology (a NIST az MNIST-ben) állított össze az 1980-as években. Az MNIST „megoldását” a mély tanulás „Hello Worldjének” tekintheti – ezzel ellenőrizheti, hogy az algoritmusok a várt módon működnek-e. Ahogy gépi tanulással foglalkozó gyakornok leszel, az MNIST újra és újra megjelenik a tudományos közleményekben, blogbejegyzésekben stb. Néhány MNIST mintát láthat a 2.1. ábrán.
+Nézzünk egy konkrét példát egy neurális hálózatra, amely a Python Keras könyvtárat használja a kézzel írt számjegyek osztályozásának megtanulására. Hacsak nincs már tapasztalata a Keras vagy hasonló könyvtárakkal kapcsolatban, nem fog azonnal mindent megérteni erről az első példáról. Ez rendben van így. A következő fejezetben a példa minden elemét áttekintjük, és részletesen elmagyarázzuk. Tehát ne aggódjon, ha egyes lépések önkényesnek vagy varázslatosnak tűnnek! Valahol el kell kezdenünk.
+
+A probléma, amit itt próbálunk megoldani, az, hogy a kézzel írt számjegyek (28 × 28 pixeles) szürkeárnyalatos képeit a 10 kategóriájukba (0-tól 9-ig) besoroljuk. A gépi tanulási közösség klasszikusának számító MNIST adatkészletet fogjuk használni, amely majdnem olyan régóta létezik, mint maga a terület, és intenzíven tanulmányozták. Ez egy 60 000 képzési képből és 10 000 tesztképből álló készlet, amelyet a National Institute of Standards and Technology (a NIST az MNIST-ben) állított össze az 1980-as években. Az MNIST „megoldását” a mélytanulás „Hello Worldjének” tekintheti – ezzel ellenőrizni tudja, hogy az algoritmusok a várt módon működnek-e. Ahogy gépi tanulással foglalkozó gyakornok lesz, az MNIST újra és újra megjelenik a tudományos közleményekben, blogbejegyzésekben stb. Néhány MNIST mintát láthat a 2.1. ábrán.
 
 ![](figs/f2.1_.jpg)
 
@@ -23,7 +24,7 @@ MEGJEGYZÉS
 
 > A gépi tanulásban egy osztályozási probléma kategóriáját osztálynak nevezzük. Az adatpontokat mintáknak nevezzük. Az adott mintához tartozó osztályt címkének nevezzük.
 
-Ne akarja most megpróbálni reprodukálni ezt a példát a gépén. Ha szeretné, először be kell állítania egy mély tanulási munkaterületet, amelyről a 3. fejezetben olvashat.
+Ne akarja most megpróbálni reprodukálni ezt a példát a gépén. Ha szeretné, először be kell állítania egy mélytanulási munkaterületet, amelyről a 3. fejezetben olvashat.
 Az MNIST-adatkészlet a Kerasba előre telepítve, négy NumPy-tömbből álló készlet formájában érkezik.
 
 ### 2.1. lista: Az MNIST adatkészlet betöltése Kerasba
@@ -38,7 +39,7 @@ from tensorflow.keras.datasets import mnist
 {28.o:}
 A képek NumPy tömbökként vannak kódolva, a címkék pedig számjegyek 0-tól 9-ig terjedő tömbjei. A képek és a címkék egy az egyben megfelelnek.
 
-Nézzük az edzési adatokat:
+Nézzük a képzési adatokat:
 ```
 >>> train_images.shape
 (60000, 28, 28)
@@ -74,12 +75,12 @@ model = keras.Sequential([
 ])
 ```
 
-A neurális hálózatok alapvető építőköve a réteg. A réteget az adatok szűrőjének tekintheti: bizonyos adatok bekerülnek, és hasznosabb formában kerülnek ki. Pontosabban, a rétegek *reprezentációkat* vonnak ki a beléjük betáplált adatokból – remélhetőleg olyan reprezentációkat, amelyek értelmesebbek az adott probléma szempontjából. A mély tanulás nagy része egyszerű rétegek összeláncolásából áll, amelyek a progresszív *adatdesztilláció* egy formáját valósítják meg. A mélytanulási modell olyan, mint az adatfeldolgozás szitája, amely egyre finomabb adatszűrőkből – a rétegekből – áll.
+A neurális hálózatok alapvető építőköve a réteg. A réteget az adatok szűrőjének tekintheti: bizonyos adatok bekerülnek, és hasznosabb formában kerülnek ki. Pontosabban, a rétegek *reprezentációkat* vonnak ki a beléjük betáplált adatokból – remélhetőleg olyan reprezentációkat, amelyek értelmesebbek az adott probléma szempontjából. A mélytanulás nagy része egyszerű rétegek összeláncolásából áll, amelyek a progresszív *adatdesztilláció* egy formáját valósítják meg. A mélytanulási modell olyan, mint az adatfeldolgozás szitája, amely egyre finomabb adatszűrőkből – a rétegekből – áll.
 
 Itt a modellünk két sűrű réteg sorozatából áll, amelyek sűrűn összefüggő (más néven *teljesen összefüggő*) idegi rétegek. A második (és utolsó) réteg egy 10-utas *softmax osztályozási* réteg, ami azt jelenti, hogy 10 valószínűségi pontszámból álló tömböt fog visszaadni (összeadva 1-et). Minden pontszám annak a valószínűsége lesz, hogy az aktuális számjegyű kép a 10 számjegyű osztályunk valamelyikébe tartozik.
 {29.o:}
 
-Ahhoz, hogy a modell edzésre kész legyen, további három dolgot kell kiválasztanunk az *összeállítási* lépés részeként:
+Ahhoz, hogy a modell képzésre kész legyen, további három dolgot kell kiválasztanunk az *összeállítási* lépés részeként:
 * *Egy optimalizálót* – Az a mechanizmus, amelyen keresztül a modell frissíti magát a látott betanítási adatok alapján, hogy javítsa a teljesítményét.
 * *Egy veszteségfüggvényt* – Hogyan tudja a modell mérni a teljesítményét a betanítási adatokon, és így hogyan tudja majd a megfelelő irányba terelni magát.
 * *A képzés és a tesztelés során figyelendő mutatókat* – Itt csak a pontossággal (a helyesen besorolt képek töredékével) foglalkozunk.
@@ -120,7 +121,7 @@ Epoch 2/5
 51328/60000 [=====================>.....] - ETA: 1s - loss: 0.1035 - acc: 0.9692
 ```
 
-A betanítás során két mennyiség jelenik meg: a modell veszttesége a betanítási adatok felett, és a modell pontossága a betanítási adatok felett. Az edzésadatokon gyorsan elérjük a 0,989-es (98,9%-os) pontosságot.
+A betanítás során két mennyiség jelenik meg: a modell vesztesége a betanítási adatok felett, és a modell pontossága a betanítási adatok felett. A képzési adatokon gyorsan elérjük a 0,989-es (98,9%-os) pontosságot.
 
 Most, hogy van egy betanított modellünk, felhasználhatjuk új számjegyek osztályvalószínűségének előrejelzésére – olyan képekre, amelyek nem képezték a betanítási adatok részét, például a tesztkészletből. {30.o:}
 
@@ -163,9 +164,9 @@ Ellenőrizni tudjuk, hogy a tesztcímke megegyezik-e:
 test_acc: 0.9785
 ```
 
-A tesztkészlet pontossága 97,8% - ez egy kicsit kisebb, mint az edzéskészlet pontossága (98,9%). A képzési pontosság és a tesztpontosság közötti különbség a *túlillesztés* példája: az a tény, hogy a gépi tanulási modellek általában rosszabbul teljesítenek az új adatokon, mint a betanítási adatokon. A túlillesztés a 3. fejezet központi témája.
+A tesztkészlet pontossága 97,8% - ez egy kicsit kisebb, mint a képzési készlet pontossága (98,9%). A képzési pontosság és a tesztpontosság közötti különbség a *túlillesztés* példája: az a tény, hogy a gépi tanulási modellek általában rosszabbul teljesítenek az új adatokon, mint a betanítási adatokon. A túlillesztés a 3. fejezet központi témája.
 
-Ezzel végére is értünk az első példánknak – most láttad, hogyan tudsz felépíteni és betanítani egy neurális hálózatot, hogy a kézzel írt számjegyeket osztályozza, és mindezt kevesebb, mint 15 Python-kódsorban. Ebben és a következő fejezetben részletesen kitérünk minden alkotórészre, amelyet most előre megnéztünk, és tisztázzuk, mi történik a színfalak mögött. Megismerheti a tenzorokat, a modellbe kerülő adattároló objektumokat; tenzorműveleteket, mely rétegekből készülnek; és a gradiens süllyedést, amely lehetővé teszi, hogy modellje tanuljon a képzési példákból. {31.o:}
+Ezzel végére is értünk az első példánknak – most láttad, hogyan tudsz felépíteni és betanítani egy neurális hálózatot, hogy a kézzel írt számjegyeket osztályozza, és mindezt kevesebb, mint 15 Python-kódsorban. Ebben és a következő fejezetben részletesen kitérünk minden alkotórészre, amelyet most előre megnéztünk, és tisztázzuk, mi történik a színfalak mögött. Megismerheti a tenzorokat, a modellbe kerülő adattároló objektumokat; tenzorműveleteket, mely rétegekből készülnek; és a gradiens ereszkedést, amely lehetővé teszi, hogy modellje tanuljon a képzési példákból. {31.o:}
 
 ## **2.2. Adatábrázolások neurális hálózatokhoz**
 
@@ -232,7 +233,7 @@ Ha a harmadrendű tenzorokat egy tömbbe csomagolja, létrehozhat egy negyedrend
 
 A tenzort három fő attribútum határozza meg:
 * *Tengelyek száma (rend)* – Például egy harmadrendű tenzornak három tengelye van, a mátrixnak pedig két tengelye van. Ezt a Python-könyvtárak, például a NumPy vagy a TensorFlow a tenzor `ndim`-jének is nevezik.
-* *Alakzat* – Ez egy egész szám, amely leírja, hogy a tenzornak hány dimenziója van az egyes tengelyek mentén. Például az előző mátrixpéldának van alakja `(3, 5)`, a harmadrendű tenzoros példának pedig az alakja `(3, 3, 5)`. A vektornak egyetlen elemű alakja van, például `(5,)`, míg a skalárnak az alakja üres, `()`. {33}
+* *Alak* – Ez egy egész szám, amely leírja, hogy a tenzornak hány dimenziója van az egyes tengelyek mentén. Például az előző mátrixpéldának az alakja `(3, 5)`, a harmadrendű tenzoros példának pedig az alakja `(3, 3, 5)`. A vektornak egyetlen elemű alakja van, például `(5,)`, míg a skalárnak az alakja üres, `()`. {33}
 * *Adattípus (általában `dtype`-nak nevezik a Python könyvtárakban)* – Ez a tenzorban található adatok típusa; Például egy tenzor típusa lehet `float16, float32, float64, uint8` stb. A TensorFlow-ban valószínűleg találkozhatsz `sztring` tenzorokkal is.
 
 Hogy ezt konkrétabbá tegyük, tekintsünk vissza az MNIST példában feldolgozott adatokra. Először betöltjük az MNIST adatkészletet:
@@ -263,7 +264,7 @@ Jelenítsük meg a negyedik számjegyet ebben a harmadrendű tenzorban a Matplot
 
 **2.2. ábra:** Adatkészletünk negyedik mintája
 
-## -2.8. lista: A negyedik számjegy megjelenítése
+**2.8. lista: A negyedik számjegy megjelenítése**
 
 
 
@@ -285,7 +286,7 @@ Természetesen a megfelelő címke a 9-es egész szám:
 
 Az előző példában kiválasztottunk egy adott számjegyet az első tengely mellett a `train_images[i]` szintaxis használatával. A tenzorban meghatározott elemek kiválasztását *tenzorszeletelésnek* nevezzük.
 Nézzük meg a tenzorszeletelési műveleteket, amelyeket a NumPy tömbökön végezhet.
-A következő példa a #10-től #100-ig terjedő számjegyeket választja ki (a #100 nem szerepel), és egy alakzattömbbe helyezi őket `(90, 28, 28)`:
+A következő példa a #10-től #100-ig terjedő számjegyeket választja ki (a #100 nem szerepel), és egy `(90, 28, 28)` alakú tömbbe helyezi őket :
 ```
 >>> my_slice = train_images[10:100]
 >>> my_slice.shape
@@ -314,7 +315,7 @@ my_slice = train_images[:, 7:-7, 7:-7]
 
 {35.o:} Általánosságban elmondható, hogy az első tengely (0-s tengely, mert az indexelés 0-tól kezdődik) a mélytanulás során használt összes adattenzorban a *mintatengely* lesz (ezt néha *minta-dimenziónak* is nevezik). Az MNIST példában a „minták” számjegyek képei.
 
-Ezenkívül a mély tanulási modellek nem dolgoznak fel egyszerre egy teljes adatkészletet; hanem kis kötegekre bontják az adatokat. Konkrétan, íme egy köteg MNIST számjegyeinkből, 128-as kötegmérettel:
+Ezenkívül a mélytanulási modellek nem dolgoznak fel egyszerre egy teljes adatkészletet; hanem kis kötegekre bontják az adatokat. Konkrétan, íme egy köteg MNIST számjegyeinkből, 128-as kötegmérettel:
 ```
 batch = train_images[:128]
 ```
@@ -327,7 +328,7 @@ batch = train_images[128:256]
 n = 3
 batch = train_images[128 * n:128 * (n + 1)]
 ```
-Ha ilyen kötegtenzorra gondolunk, akkor az első tengelyt (0. tengely) *kötegtengelynek* vagy *kötegdimenziónak* nevezzük. Ez egy olyan kifejezés, amellyel gyakran találkozik a Keras és más mély tanulási könyvtárak használatakor.
+Ha ilyen kötegtenzorra gondolunk, akkor az első tengelyt (0. tengely) *kötegtengelynek* vagy *kötegdimenziónak* nevezzük. Ez egy olyan kifejezés, amellyel gyakran találkozik a Keras és más mélytanulási könyvtárak használatakor.
 
 ### 2.2.8 Valós példák adattenzorokra
 
@@ -705,17 +706,17 @@ Tekintsünk egy új pontot, `B = [1, 0.25]`, amelyet hozzáadunk az előzőhöz.
 
 **2.12 ábra:** Affin transzformáció a síkban
 
-* *`Dense` (sűrű) réteg `relu` aktiválással:* Egy fontos megfigyelés az affin transzformációkkal kapcsolatban, hogy ha sokat alkalmazunk közülük ismételten, akkor is affin transzformációhoz jutunk (tehát eleve ezt az egy affin transzformációt alkalmazhattuk volna). Próbáljuk meg kettővel: `affin2(affin1(x)) = W2 • (W1 • x + b1) + b2 = (W2 • W1) • x + (W2 • b1 + b2)`. Ez egy affin transzformáció, ahol a lineáris rész a `W2 • W1` mátrix, a transzlációs rész pedig a `W2 • b1 + b2` vektor. Következésképpen egy többrétegű neurális hálózat, amely teljes egészében `Dense` rétegekből épül fel, aktiválások nélkül, egyenértékű egyetlen `Dense` réteggel. Ez a „mély” neurális hálózat csak egy álcázott lineáris modell lenne! Ezért van szükségünk olyan aktiváló funkciókra, mint a `relu` (működésben látható a 2.13. ábrán). Az aktiválási függvényeknek köszönhetően a `Dense` rétegek láncolata nagyon összetett, nem lineáris geometriai transzformációk megvalósítására késztethető, ami nagyon gazdag hipotézisteret eredményez a mély neurális hálózatok számára. Ezzel az ötlettel a következő fejezetben részletesebben foglalkozunk.
+* *`Dense` (sűrű) réteg `relu` aktiválással:* Egy fontos megfigyelés az affin transzformációkkal kapcsolatban, hogy ha sokat alkalmazunk közülük ismételten, akkor is affin transzformációhoz jutunk (tehát eleve ezt az egy affin transzformációt alkalmazhattuk volna). Próbáljuk meg kettővel: `affin2(affin1(x)) = W2 • (W1 • x + b1) + b2 = (W2 • W1) • x + (W2 • b1 + b2)`. Ez egy affin transzformáció, ahol a lineáris rész a `W2 • W1` mátrix, a transzlációs rész pedig a `W2 • b1 + b2` vektor. Következésképpen egy többrétegű neurális hálózat, amely teljes egészében `Dense` rétegekből épül fel, aktiválások nélkül, egyenértékű egyetlen `Dense` réteggel. Ez a „mély” neurális hálózat csak egy álcázott lineáris modell lenne! Ezért van szükségünk olyan aktiváló függvényekre, mint a `relu` (működésben látható a 2.13. ábrán). Az aktiválási függvényeknek köszönhetően a `Dense` rétegek láncolata nagyon összetett, nem lineáris geometriai transzformációk megvalósítására késztethető, ami nagyon gazdag hipotézisteret eredményez a mély neurális hálózatok számára. Ezzel az ötlettel a következő fejezetben részletesebben foglalkozunk.
 
 ![](figs/f2.13_.jpg)
 
 **2.13 ábra:** Affin transzformáció, majd `relu` aktiválás
 
-### 2.3.6 A mély tanulás geometriai értelmezése
+### 2.3.6 A mélytanulás geometriai értelmezése
 
 Most tanulta meg, hogy a neurális hálózatok teljes egészében tenzorműveletek láncaiból állnak, és hogy ezek a tenzorműveletek a bemeneti adatok egyszerű geometriai transzformációi. Ebből az következik, hogy a neurális hálózatot egy nagyon összetett geometriai transzformációként értelmezheti egy nagy dimenziós térben, amelyet egyszerű lépések sorozatával valósítanak meg.
 
-3D-ben a következő mentális kép hasznos lehet. Képzeljen el két színes papírlapot: egy pirosat és egy kéket. Tegye egyiket a másikra. Most gyűrje össze őket egy kis golyóvá. Ez a gyűrött papírgolyó a bemeneti adat, és minden papírlap egy osztályozási probléma adatosztálya. Egy neurális hálózatnak az a célja, hogy kitalálja a papírgömb transzformációját, amely szétszedi, így a két osztály ismét tisztán elválaszthatóvá válik (lásd a 2.14. ábrát). A mély tanulással ez a 3D-s tér egyszerű átalakításainak sorozataként valósulna meg, például azokkal, amelyeket ujjaival, egy-egy mozdulattal tudna alkalmazni a papírgolyóra.
+3D-ben a következő mentális kép hasznos lehet. Képzeljen el két színes papírlapot: egy pirosat és egy kéket. Tegye egyiket a másikra. Most gyűrje össze őket egy kis golyóvá. Ez a gyűrött papírgolyó a bemeneti adat, és minden papírlap egy osztályozási probléma adatosztálya. Egy neurális hálózatnak az a célja, hogy kitalálja a papírgömb transzformációját, amely szétszedi, így a két osztály ismét tisztán elválaszthatóvá válik (lásd a 2.14. ábrát). A mélytanulással ez a 3D-s tér egyszerű átalakításainak sorozataként valósulna meg, például azokkal, amelyeket ujjaival, egy-egy mozdulattal tudna alkalmazni a papírgolyóra.
 
 ![](figs/f2.14_.jpg)
 
@@ -729,7 +730,7 @@ Ahogy az előző részben láthatta, az első modellpéldánkból származó min
 ```
 output = relu(dot(input, W) + b)
 ```
-Ebben a kifejezésben W és b tenzorok, amelyek a réteg attribútumai. Ezeket a réteg *súlyainak* vagy *betanítható paramétereinek* (a `kernel` és a `bias` 'torzítás' attribútumainak) nevezik. Ezek a súlyok azokat az információkat tartalmazzák, amelyeket a modell az edzési adatok expozíciójából tanul meg.
+Ebben a kifejezésben W és b tenzorok, amelyek a réteg attribútumai. Ezeket a réteg *súlyainak* vagy *betanítható paramétereinek* (a `kernel` és a `bias` 'torzítás' attribútumainak) nevezik. Ezek a súlyok azokat az információkat tartalmazzák, amelyeket a modell a képzési adatok expozíciójából tanul meg.
 
 Kezdetben ezek a súlymátrixok kis véletlenszerű értékekkel vannak feltöltve (ezt a lépést *véletlenszerű inicializálásnak* nevezik). Természetesen nincs okunk arra számítani, hogy a `relu(dot(input, W) + b)`, amikor `W` és `b` véletlenszerű, bármilyen hasznos reprezentációt ad. Az eredményül kapott reprezentációk értelmetlenek – de kiindulópontot jelentenek. A következő lépés a súlyok fokozatos, visszacsatolási jel alapján történő módosítása. Ez a fokozatos alkalmazkodás, amelyet *képzésnek* is neveznek, az a tanulás, amelyről az egész gépi tanulás szól.
 
@@ -746,9 +747,9 @@ Az 1. lépés elég egyszerűnek hangzik – csak I/O kód. A 2. és 3. lépés 
 
 Az egyik naiv megoldás az lenne, ha a modellben az összes súlyt rögzítenénk, kivéve az egy skaláris együtthatót, és ennek az együtthatónak különböző értékekkel próbálkoznánk. Tegyük fel, hogy az együttható kezdeti értéke 0,3. Egy adatköteg továbbadása után a köteg modelljének vesztesége 0,5. Ha az együttható értékét 0,35-re változtatja, és megismétli az előrelépést, a veszteség 0,6-ra nő. De ha az együtthatót 0,25-re csökkenti, a veszteség 0,4-re csökken. Ebben az esetben úgy tűnik, hogy az együttható –0,05-tel történő frissítése hozzájárulna a veszteség minimalizálásához. Ezt meg kell ismételni a modell összes együtthatójára.
 
-De egy ilyen megközelítés rettenetesen hatástalan lenne, mert minden egyes együtthatóhoz (amelyből sok van, általában több ezer, néha akár millió is) két előrepasszt (amelyek költségesek) kellene kiszámítani. Szerencsére van egy sokkal jobb megközelítés: a *gradiens süllyedés*.
+De egy ilyen megközelítés rettenetesen hatástalan lenne, mert minden egyes együtthatóhoz (amelyből sok van, általában több ezer, néha akár millió is) két előrepasszt (amelyek költségesek) kellene kiszámítani. Szerencsére van egy sokkal jobb megközelítés: a *gradiens ereszkedés*.
 
-A gradiens süllyedés az az optimalizálási technika, amely a modern neurális hálózatokat működteti. Íme a lényeg. A modelljeinkben használt összes függvény (mint például a `dot` vagy a `+`) simán és folytonosan átalakítja a bemenetét: ha például `z = x + y`-t nézzük, y-ben egy kis változás csak kis változást eredményez z-ben, és ha ismeri y változásának irányát, akkor következtetni tud z változásának irányára. Matematikailag azt mondanád, hogy ezek a függvények *differenciálhatók*. Ha összeláncolja az ilyen függvényeket, a kapott nagyobb függvény továbbra is differenciálható. Ez különösen vonatkozik arra a függvényre, amely a modell együtthatóit leképezi a modell veszteségére egy adatkötegben: a modell együtthatóinak kis változása kis, előre látható változást eredményez a veszteség értékében. Ez lehetővé teszi, hogy a *gradiensnek* nevezett matematikai operátort leírja, hogyan változik a veszteség, amikor a modell együtthatóit különböző irányokba mozgatja. Ha kiszámítja ezt a gradienst, akkor használhatja az együtthatók mozgatására (egy frissítésben egyszerre, nem pedig egyenként) a veszteséget csökkentő irányba.
+A gradiens ereszkedés az az optimalizálási technika, amely a modern neurális hálózatokat működteti. Íme a lényeg. A modelljeinkben használt összes függvény (mint például a `dot` vagy a `+`) simán és folytonosan átalakítja a bemenetét: ha például `z = x + y`-t nézzük, y-ben egy kis változás csak kis változást eredményez z-ben, és ha ismeri y változásának irányát, akkor következtetni tud z változásának irányára. Matematikailag azt mondanád, hogy ezek a függvények *differenciálhatók*. Ha összeláncolja az ilyen függvényeket, a kapott nagyobb függvény továbbra is differenciálható. Ez különösen vonatkozik arra a függvényre, amely a modell együtthatóit leképezi a modell veszteségére egy adatkötegben: a modell együtthatóinak kis változása kis, előre látható változást eredményez a veszteség értékében. Ez lehetővé teszi, hogy a *gradiensnek* nevezett matematikai operátort leírja, hogyan változik a veszteség, amikor a modell együtthatóit különböző irányokba mozgatja. Ha kiszámítja ezt a gradienst, akkor használhatja az együtthatók mozgatására (egy frissítésben egyszerre, nem pedig egyenként) a veszteséget csökkentő irányba.
 
 Ha már tudja, mit jelent a *differenciálhatóság* és mi a *gradiens*, akkor ugorjon a 2.4.3. szakaszra. Ellenkező esetben a következő két rész segít megérteni ezeket a fogalmakat.
 
@@ -814,7 +815,7 @@ Konkrétan mit jelent a `grad(los_value, W0)`? Korábban láttad, hogy egyetlen 
 
 Emiatt nagyjából ugyanúgy, mint az `f(x)` függvénynél, csökkenteni tudjuk az `f(x)` értékét, ha x-et a deriválttal ellentétes irányban egy kicsit elmozdítjuk egy `f(W)` tenzorfüggvény segítségével csökkenthetjük a `loss_value = f(W)` értékét, ha `W`-t a gradienssel ellentétes irányba mozdítjuk: például `W1 = W0 - step * grad(f(W0), W0)` (ahol a `step` egy kis méretező tényező). Ez azt jelenti, hogy az f legmeredekebb emelkedési irányával ellentétes irányba haladunk, ami intuitív módon lejjebb visz a görbén. Vegyük észre, hogy a `step` skálázási tényezőre azért van szükség, mert a `grad(loss_value, W0)` csak akkor közelíti meg a görbületet, ha közel vagyunk a `W0`-hoz, tehát nem szeretnénk túl messzire kerülni a `W0`-tól.
 
-### 2.4.3 Sztochasztikus gradiens süllyedés (SGD)
+### 2.4.3 Sztochasztikus gradiens ereszkedés (SGD)
 
 Adott egy differenciálható függvény; elméletileg lehetséges analitikusan megtalálni a minimumát: köztudott, hogy egy függvény minimuma az a pont, ahol a derivált értéke 0, tehát mindössze annyit kell tenni, hogy meg kell találni azokat a pontokat, ahol a derivált 0-vá válik, és ellenőrizni kell, hogy ezek közül a pontok közül a függvénynek hol van a legkisebb értéke.
 
@@ -825,9 +826,9 @@ Ehelyett használhatjuk a szakasz elején felvázolt négylépéses algoritmust:
 2. Futtassuk a modellt x-en, hogy előrejelzéseket kapjunk, `y_pred`-et (ezt hívják *előrelépésnek*).
 3. Számítsuk ki a modell veszteségét a kötegben, az `y_pred` és az `y_true` közötti eltérés mértékét.
 4. Számítsuk ki a veszteség gradiensét a modell paraméterei alapján (ezt nevezzük *visszafelé haladásnak*).
-5. Mozgassuk a paramétereket egy kicsit a gradienssel ellentétes irányba – például `W -= learning_rate * gradient` –, így egy kicsit csökkentjük a köteg veszteségét. A *tanulási sebesség* (itt a `learning rate`) a gradiens süllyedési folyamat „sebességét” módosító skaláris tényező lenne.
+5. Mozgassuk a paramétereket egy kicsit a gradienssel ellentétes irányba – például `W -= learning_rate * gradient` –, így egy kicsit csökkentjük a köteg veszteségét. A *tanulási sebesség* (itt a `learning rate`) a gradiens ereszkedési folyamat „sebességét” módosító skaláris tényező lenne.
 
-Elég könnyű! Amit az imént leírtunk, az úgynevezett *mini-köteg sztochasztikus gradiens süllyedés* (mini-batch SGD). A *sztochasztikus* kifejezés arra a tényre utal, hogy minden adatköteget véletlenszerűen "húzunk ki" (a *sztochasztikus* a *véletlen* tudományos szinonimája). A 2.18. ábra szemlélteti, hogy mi történik 1D-ben, amikor a modellnek csak egy paramétere van, és csak egy betanítási mintája van.
+Elég könnyű! Amit az imént leírtunk, az úgynevezett *mini-köteg sztochasztikus gradiens ereszkedés* (mini-batch SGD). A *sztochasztikus* kifejezés arra a tényre utal, hogy minden adatköteget véletlenszerűen "húzunk ki" (a *sztochasztikus* a *véletlen* tudományos szinonimája). A 2.18. ábra szemlélteti, hogy mi történik 1D-ben, amikor a modellnek csak egy paramétere van, és csak egy betanítási mintája van.
 
 ![](figs/f2.18_.jpg)
 
@@ -835,13 +836,13 @@ Elég könnyű! Amit az imént leírtunk, az úgynevezett *mini-köteg sztochasz
 
 Amint látja, intuitív módon fontos ésszerű értéket választani a tanulási arány (`learning_rate`) tényezőhöz. Ha túl kicsi, a görbén lefelé ereszkedés sok iterációt igényel, és megrekedhet a helyi minimumban. Ha a `learning_rate` túl nagy, a frissítések végül teljesen véletlenszerű helyekre juttathatnak el minket a görbén.
 
-Vegye észre, hogy a mini kötegelt SGD-algoritmus egyik változata egyetlen mintát húz és céloz mindegyik iterációnál ahelyett, hogy egy köteg adatot húzna. Ez *valódi* SGD lenne (szemben a *mini-batch* SGD-vel). Alternatív megoldásként, ha az ellenkező végletbe csapnánk át, minden lépést lefuttatnánk az *összes* elérhető adaton, amit *kötegelt gradiens süllyedésnek* neveznek. Minden frissítés pontosabb, de sokkal drágább lenne. A két véglet közötti hatékony kompromisszum az észszerű méretű mini-kötegek használata.
+Vegye észre, hogy a mini kötegelt SGD-algoritmus egyik változata egyetlen mintát húz és céloz mindegyik iterációnál ahelyett, hogy egy köteg adatot húzna. Ez *valódi* SGD lenne (szemben a *mini-batch* SGD-vel). Alternatív megoldásként, ha az ellenkező végletbe csapnánk át, minden lépést lefuttatnánk az *összes* elérhető adaton, amit *kötegelt gradiens ereszkedésnek* neveznek. Minden frissítés pontosabb, de sokkal drágább lenne. A két véglet közötti hatékony kompromisszum az észszerű méretű mini-kötegek használata.
 
-Bár a 2.18. ábra a gradiens süllyedést egy 1D paramétertérben szemlélteti, a gyakorlatban a gradiens süllyedést sok dimenziójú terekben fogjuk használni: egy neurális hálózatban minden súlyegyüttható szabad dimenzió a térben, és lehet több tízezer vagy akár millió is belőlük. A veszteségfelületekkel kapcsolatos intuíció kialakítása érdekében a 2D veszteségfelület mentén történő gradiens süllyedést is megjeleníthetjük, amint az a 2.19. ábrán látható. De nem lehet elképzelni, hogyan néz ki egy neurális hálózat képzésének tényleges folyamata – nem tudunk ábrázolni egy 1 000 000 dimenziós teret úgy, hogy az az emberek számára is értelmes legyen. Emiatt jó észben tartani, hogy a kevés dimenziós ábrázolásokon keresztül kifejlesztett intuíciók nem mindig pontosak a gyakorlatban. Ez történelmileg problémák forrása volt a mély tanulási kutatás világában. {54.o:}
+Bár a 2.18. ábra a gradiens ereszkedést egy 1D paramétertérben szemlélteti, a gyakorlatban a gradiens ereszkedést sok dimenziójú terekben fogjuk használni: egy neurális hálózatban minden súlyegyüttható szabad dimenzió a térben, és lehet több tízezer vagy akár millió is belőlük. A veszteségfelületekkel kapcsolatos intuíció kialakítása érdekében a 2D veszteségfelület mentén történő gradiens ereszkedést is megjeleníthetjük, amint az a 2.19. ábrán látható. De nem lehet elképzelni, hogyan néz ki egy neurális hálózat képzésének tényleges folyamata – nem tudunk ábrázolni egy 1 000 000 dimenziós teret úgy, hogy az az emberek számára is értelmes legyen. Emiatt jó észben tartani, hogy a kevés dimenziós ábrázolásokon keresztül kifejlesztett intuíciók nem mindig pontosak a gyakorlatban. Ez történelmileg problémák forrása volt a mélytanulási kutatás világában. {54.o:}
 
 ![](figs/f2.19_.jpg)
 
-**2.19. ábra:** Gradiens süllyedés egy 2D veszteségfelületen (két tanulható paraméternél)
+**2.19. ábra:** Gradiens ereszkedés egy 2D veszteségfelületen (két tanulható paraméternél)
 
 Ezenkívül az SGD-nek több változata is létezik, amelyek abban különböznek, hogy a következő súlyfrissítés kiszámításakor figyelembe veszik a korábbi súlyfrissítéseket, ahelyett, hogy csak a gradiensek aktuális értékét néznék. Ott van például az SGD with momentum, valamint az Adagrad, az RMSprop és még sokan mások. Az ilyen változatokat *optimalizálási módszereknek* vagy *optimalizálóknak* nevezzük. Különösen a *momentum* (lendület) fogalma érdemel figyelmet, amelyet sok ilyen változatban használnak. A momentum két SGD-vel kapcsolatos gonddal foglalkozik: a konvergencia sebességével és a helyi minimumokkal. Tekintsük a 2.20 ábrát, amely a veszteség görbéjét mutatja egy modellparaméter függvényében.
 
@@ -905,21 +906,21 @@ A láncszabály alkalmazása a neurális hálózat gradiensértékeinek kiszám�
 
 ![](figs/f2.21_.jpg)
 
-**2.21. ábra:** A kétrétegű modellünk számítási grafikonja
+**2.21. ábra:** A kétrétegű modellünk számítási gráfja
 
 **AUTOMATIKUS DIFFERENCIÁLÁS SZÁMÍTÁSI GRÁFOKKAL**
 
-A visszaszaporítás hasznos módja a *számítási grafikonok* használata. A számítási gráf a TensorFlow és általában a mély tanulási forradalom középpontjában álló adatstruktúra. Ez a műveletek irányított aciklikus gráfja – esetünkben tenzorműveletek. Például a 2.21. ábra az első modellünk grafikonos ábrázolását mutatja.
+A visszaterjesztés hasznos módja a *számítási gráfok* használata. A számítási gráf a TensorFlow és általában a mélytanulási forradalom középpontjában álló adatstruktúra. Ez a műveletek irányított aciklikus gráfja – esetünkben tenzorműveletek. Például a 2.21. ábra az első modellünk gráfos ábrázolását mutatja.
 
 A számítási gráfok rendkívül sikeres absztrakciót jelentenek a számítástechnikában, mert lehetővé teszik számunkra, hogy a *számítást adatként kezeljük*: egy kiszámítható kifejezést géppel olvasható adatstruktúraként kódolnak, amely egy másik program bemeneteként vagy kimeneteként használható. Például elképzelhetünk egy programot, amely számítási gráfot kap, és egy új számítási gráfot ad vissza, amely ugyanazon számítás nagy léptékű elosztott változatát valósítja meg – ez azt jelentené, hogy bármilyen számítást eloszthat anélkül, hogy magának kellene megírnia az elosztási logikát. Vagy képzeljünk el egy programot, amely egy számítási gráfot kap, és automatikusan generálja az általa reprezentált kifejezés deriváltját. Sokkal egyszerűbb ezeket a dolgokat megtenni, ha a számításokat explicit gráf adatstruktúraként fejezik ki, nem pedig mondjuk ASCII-karakterek soraiban egy .py fájlban.
 
-A visszaszaporítás egyértelmű magyarázata érdekében nézzünk meg egy igazán alapvető példát egy számítási gráfra (lásd a 2.22. ábrát). A 2.21. ábra egyszerűsített változatát tekintjük, ahol csak egy lineáris rétegünk van, és ahol minden változó skaláris. Vegyünk két `w` és `b` skalárváltozót, egy `x` skaláris bemenetet, és alkalmazunk rájuk néhány műveletet, hogy `y` kimenetté egyesítsük őket. Végül egy abszolút érték-hibaveszteség függvényt alkalmazunk: `loss_val = abs(y_true - y)`. Mivel a `w`-t és a `b`-t úgy szeretnénk frissíteni, hogy az minimalizálja a `loss_val` értékét, a `grad(loss_val, b)` és a `grad(loss_val, w)` kiszámítása érdekel.
+A visszaterjesztés egyértelmű magyarázata érdekében nézzünk meg egy igazán alapvető példát egy számítási gráfra (lásd a 2.22. ábrát). A 2.21. ábra egyszerűsített változatát tekintjük, ahol csak egy lineáris rétegünk van, és ahol minden változó skaláris. Vegyünk két `w` és `b` skalárváltozót, egy `x` skaláris bemenetet, és alkalmazunk rájuk néhány műveletet, hogy `y` kimenetté egyesítsük őket. Végül egy abszolút érték-hibaveszteség függvényt alkalmazunk: `loss_val = abs(y_true - y)`. Mivel a `w`-t és a `b`-t úgy szeretnénk frissíteni, hogy az minimalizálja a `loss_val` értékét, a `grad(loss_val, b)` és a `grad(loss_val, w)` kiszámítása érdekel.
 
 ![](figs/f2.22_.jpg)
 
 **2.22. ábra:** A számítási gráf alapvető példája
 
-Adjunk meg konkrét értékeket a grafikon „bemeneti csomópontjaihoz”, azaz az x bemenethez, a cél y_true, w és b pontokhoz. Ezeket az értékeket a grafikon összes csomópontjára továbbítjuk, felülről lefelé, amíg el nem érjük a `loss_val` pontot. Ez az *előre passz* (lásd a 2.23. ábrát).
+Adjunk meg konkrét értékeket a gráf „bemeneti csomópontjaihoz”, azaz az x bemenethez, a cél y_true, w és b pontokhoz. Ezeket az értékeket a gráf összes csomópontjára továbbítjuk, felülről lefelé, amíg el nem érjük a `loss_val` pontot. Ez az *előre passz* (lásd a 2.23. ábrát).
 
 Most „fordítsuk meg” a gráfot: a gráf minden éléhez, amely A-ból B-be megy, létrehozunk egy ellentétes élt B-től A-ig, és megkérdezzük, mennyiben változik B, amikor A változik? Vagyis mi az a `grad(B, A)`? Ezzel az értékkel minden fordított élt megjelölünk. Ez a visszafelé gráf ábrázolja a *vissza passz* (lásd a 2.24. ábrát).
 ​
@@ -943,7 +944,7 @@ A láncszabály azt mondja erről a visszafelé mutató gráfról, hogy úgy tud
 
 ![](figs/f2.25_.jpg)
 
-**2.25. ábra:** Útvonal a `loss_val` és `w` között a visszafelé mutató grafikonon
+**2.25. ábra:** Útvonal a `loss_val` és `w` között a visszafelé mutató gráfon
 
 A láncszabályt a gráfunkra alkalmazva megkapjuk, amit kerestünk:
 ```
@@ -955,7 +956,7 @@ MEGJEGYZÉS
 
 És ezzel éppen a visszaterjesztést láttad működés közben! A visszaterjesztés egyszerűen a láncszabály alkalmazása egy számítási gráfra. Nincs benne több. A visszaterjesztés a végső veszteségértékkel kezdődik, és visszafelé halad a felső rétegektől az alsó rétegekig, kiszámítva az egyes paraméterek hozzájárulását a veszteségértékhez. Innen származik a „backpropagation” elnevezés: „visszaterjesztjük” a különböző csomópontok veszteség-hozzájárulását egy számítási gráfban.
 
-Manapság az emberek a neurális hálózatokat olyan modern keretrendszerekben valósítják meg, amelyek képesek az *automatikus differenciálásra*, mint például a TensorFlow. Az automatikus differenciálás az imént látott számítási grafikonnal valósul meg. Az automatikus differenciálás lehetővé teszi a differenciálható tenzorműveletek tetszőleges kompozícióinak gradienseinek lekérését anélkül, hogy az előrelépés lejegyzésén túl további munkát végeznénk. Amikor a 2000-es években megírtam az első neurális hálózataimat C nyelven, kézzel kellett megírnom a gradienseimet. Most, a modern automatikus differenciáló eszközöknek köszönhetően soha nem kell saját magadnak megírnod a visszaszaporítást. Tekintsd magad szerencsésnek!
+Manapság az emberek a neurális hálózatokat olyan modern keretrendszerekben valósítják meg, amelyek képesek az *automatikus differenciálásra*, mint például a TensorFlow. Az automatikus differenciálás az imént látott számítási gráffal valósul meg. Az automatikus differenciálás lehetővé teszi a differenciálható tenzorműveletek tetszőleges kompozícióinak gradienseinek lekérését anélkül, hogy az előrelépés lejegyzésén túl további munkát végeznénk. Amikor a 2000-es években megírtam az első neurális hálózataimat C nyelven, kézzel kellett megírnom a gradienseimet. Most, a modern automatikus differenciáló eszközöknek köszönhetően soha nem kell saját magadnak megírnod a visszaterjesztést. Tekintsd magad szerencsésnek!
 
 **A GRADIENS SZALAG TENSORFLOW-BAN**
 
@@ -1041,7 +1042,7 @@ model.compile(optimizer="rmsprop",
               metrics=["accuracy"])
 ```
 
-Most már megértette, hogy a `sparse_categorical_crossentropy` az a veszteségfüggvény, amelyet visszacsatolási jelként használnak a súlytenzorok megtanulásához, és amelyet az edzési szakasz megpróbál minimalizálni. Azt is tudja, hogy ez a veszteségcsökkentés mini-batch sztochasztikus gradiens süllyedés révén történik. A gradiens süllyedés konkrét használatát szabályozó pontos szabályokat az első argumentumként átadott `rmsprop` optimalizáló határozza meg.
+Most már megértette, hogy a `sparse_categorical_crossentropy` az a veszteségfüggvény, amelyet visszacsatolási jelként használnak a súlytenzorok megtanulásához, és amelyet a képzési szakasz megpróbál minimalizálni. Azt is tudja, hogy ez a veszteségcsökkentés mini-batch sztochasztikus gradiens ereszkedés révén történik. A gradiens ereszkedés konkrét használatát szabályozó pontos szabályokat az első argumentumként átadott `rmsprop` optimalizáló határozza meg.
 
 Végül ez volt a képzési ciklus:
 
@@ -1050,15 +1051,15 @@ Végül ez volt a képzési ciklus:
 model.fit(train_images, train_labels, epochs=5, batch_size=128)
 ```
 
-Most már érti, mi történik, ha meghívjuk a `fit`-et: a modell 128 mintából álló mini kötegekben kezdi el iterálni a betanítási adatokat, ötször (az összes betanítási adat minden egyes iterációját *epoch*-nak/korszaknak nevezzük). A modell minden kötegnél kiszámítja a veszteség gradiensét a súlyok figyelembevételével (a Backpropagation algoritmus használatával, amely a számítási láncszabályból származik), és a súlyokat abba az irányba mozgatja, amely csökkenti a veszteség értékét erre a kötegre.
+Most már érti, mi történik, ha meghívjuk a `fit`-et: a modell 128 mintából álló mini kötegekben kezdi el iterálni a betanítási adatokat, ötször (az összes betanítási adat minden egyes iterációját *epoch*-nak/betanítási szakasznak nevezzük). A modell minden kötegnél kiszámítja a veszteség gradiensét a súlyok figyelembevételével (a Backpropagation algoritmus használatával, amely a számítási láncszabályból származik), és a súlyokat abba az irányba mozgatja, amely csökkenti a veszteség értékét erre a kötegre.
 
-Ezen 5 korszak után a modell 2345 gradiens-frissítést hajtott végre (korszakonként 469-et), és a modell vesztesége kellően kicsi lett ahhoz, hogy a modell képes legyen nagy pontossággal osztályozni a kézzel írt számjegyeket.
+Ezen 5 szakasz után a modell 2345 gradiens-frissítést hajtott végre (szakaszonként 469-et), és a modell vesztesége kellően kicsi lett ahhoz, hogy a modell képes legyen nagy pontossággal osztályozni a kézzel írt számjegyeket.
 
 Ezen a ponton már tudjuk a legtöbbet, amit a neurális hálózatokról tudni lehet. Bizonyítsuk be ezt az első példa egyszerűsített változatának újbóli, lépésről lépésre „a semmiből” való megvalósításával a TensorFlow-ban. {63.o:}
 
 ### 2.5.1 Az első példánk újbóli megvalósítása a semmiből TensorFlow-ban
 
-Mi bizonyítja jobban a teljes, egyértelmű megértést, mint mindent a semmiből valósítani meg? Természetesen az, hogy itt mit jelent a „semmiből/nulláról”, relatív: nem fogjuk újra megvalósítani az alapvető tenzorműveleteket, és nem implementáljuk a visszaszaporítást. De olyan alacsony szintre fogunk menni, hogy szinte egyáltalán nem fogjuk használni a Keras funkcióit.
+Mi bizonyítja jobban a teljes, egyértelmű megértést, mint mindent a semmiből valósítani meg? Természetesen az, hogy itt mit jelent a „semmiből/nulláról”, relatív: nem fogjuk újra megvalósítani az alapvető tenzorműveleteket, és nem implementáljuk a visszaterjesztést. De olyan alacsony szintre fogunk menni, hogy szinte egyáltalán nem fogjuk használni a Keras függvényeit.
 
 Ne aggódjon, ha még nem érti ennek a példának minden apró részletét. A következő fejezet részletesebben foglalkozik a TensorFlow API-val. Egyelőre csak próbálja meg követni a folyamat lényegét – ennek a példának az a célja, hogy segítsen kikristályosítani a mélytanulás matematikájának megértését egy konkrét megvalósítás segítségével. Gyerünk!
 
@@ -1213,7 +1214,7 @@ Most, hogy a kötegenkénti képzési lépésünk kész, továbbléphetünk a k�
 
 ### 2.5.3 A teljes képzési ciklus
 
-A képzés egy korszaka egyszerűen abból áll, hogy megismételjük a betanítási lépést a betanítási adatok minden kötegére, és a teljes képzési ciklus egyszerűen egy korszak ismétlése:
+A képzés egy korszaka egyszerűen abból áll, hogy megismételjük a betanítási lépést a betanítási adatok mindegyik kötegére, és a teljes képzési ciklus egyszerűen egy korszak ismétlése:
 
 
 ```python
@@ -1259,13 +1260,13 @@ print(f"accuracy: {matches.mean():.2f}")
 
 Minden kész! Amint látjuk, elég sok munka "kézzel" elvégezni, amit néhány sor Keras kóddal meg tudunk tenni. De mivel ezeken a lépéseken keresztül ment, most kristálytisztán meg kell értenie, mi történik a neurális hálózaton belül, amikor a `fit()`-et hívja. Ha rendelkezik ezzel az alacsony szintű mentális modellel arról, amit a kód a színfalak mögött csinál, akkor jobban ki tudja majd használni a Keras API magas szintű szolgáltatásait.
 
-# **Összegzés**
+## **Összegzés**
 * A *tenzorok* képezik a modern gépi tanulási rendszerek alapját. Különböző jellemzőkkel bírnak: `dtype`, rend és alak/méret.
 * A numerikus tenzorokat *tenzorműveletekkel* manipulálhatjuk (például összeadás, tenzorszorzat vagy elemenkénti szorzás), amelyek geometriai transzformációk kódolásaként értelmezhetők. A mélytanulásban általában minden geometriai értelmezésre alkalmas.
 * A mélytanulási modellek egyszerű tenzorműveletek láncaiból állnak, amelyeket *súlyokkal* paramétereznek, amik maguk is tenzorok. Egy modell súlya az, ahol a „tudása” tárolódik.
 * A *tanulás* egy olyan értékkészlet megtalálását jelenti a modell súlyaihoz, amely minimálisra csökkenti a *veszteségfüggvényt* az adott tanítási adatminták és a hozzájuk tartozó célok esetére.
-* A tanulás azáltal történik, hogy az adatminták és céljaik véletlenszerű kötegeit kihúzzuk, valamint a modellparaméterek gradiensét kiszámítjuk a köteg veszteségéhez képest. A modell paramétereit ezután egy kicsit elmozdítjuk a gradienssel ellentétes irányba (a mozgás nagyságát a tanulási sebesség határozza meg). Ezt *mini-batch sztochasztikus gradiens süllyedésnek* nevezik.
+* A tanulás azáltal történik, hogy az adatminták és céljaik véletlenszerű kötegeit kihúzzuk, valamint a modellparaméterek gradiensét kiszámítjuk a köteg veszteségéhez képest. A modell paramétereit ezután egy kicsit elmozdítjuk a gradienssel ellentétes irányba (a mozgás nagyságát a tanulási sebesség határozza meg). Ezt *mini-batch sztochasztikus gradiens ereszkedésnek* nevezik.
 * A teljes tanulási folyamatot az teszi lehetővé, hogy a neurális hálózatokban minden tenzorművelet differenciálható, így lehetséges a deriválás láncszabályának segítségével megtalálni azt a gradiens függvényt, amely az aktuális paramétereket és az aktuális adatköteget egy gradiens értékre képezi le. Ezt *visszaterjesztésnek* hívják.
 * Két kulcsfontosságú fogalom van, amelyet gyakran fogunk látni a következő fejezetekben: a *veszteség* és az *optimalizálók*. Ezt a két dolgot definiálnia kell, mielőtt elkezdi az adatok betáplálását egy modellbe.
-    * A *veszteség* az a mennyiség, amelyet az edzés során minimalizálni próbálunk, tehát a megoldani kívánt feladat sikerének mércéje.
-    * Az *optimalizáló* határozza meg pontosan, hogy a veszteség gradiense milyen módon kerül felhasználásra a paraméterek frissítésére: lehet például az RMSProp optimalizáló, SGD lendülettel stb.
+ * A *veszteség* az a mennyiség, amelyet a képzés során minimalizálni próbálunk, tehát a megoldani kívánt feladat sikerének mércéje.
+ * Az *optimalizáló* határozza meg pontosan, hogy a veszteség gradiense milyen módon kerül felhasználásra a paraméterek frissítésére: lehet például az RMSProp optimalizáló, SGD lendülettel stb.
