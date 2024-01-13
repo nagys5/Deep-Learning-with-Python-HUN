@@ -31,11 +31,11 @@ Az osztályozás és a regresszió számos speciális kifejezést foglal magába
 
 A fejezet végére képes lesz a neurális hálózatok segítségével egyszerű osztályozási és regressziós feladatokat kezelni vektoradatokon. Ezután készen áll arra, hogy az 5. fejezetben elkezdje a gépi tanulás elvibb, elméleti alapú megértését.
 
-##4.1 Filmkritikák osztályozása: Példa bináris osztályozásra
+## 4.1 Filmkritikák osztályozása: Példa bináris osztályozásra
 
 A kétosztályos osztályozás vagy bináris osztályozás a gépi tanulási problémák egyik leggyakoribb fajtája. Ebben a példában meg fogjuk tanulni, hogy a filmértékeléseket hogyan lehet pozitív vagy negatív kategóriába sorolni a vélemények szöveges tartalma alapján.
 
-###4.1.1 Az IMDB adathalmaz
+### 4.1.1 Az IMDB adathalmaz
 
 Az IMDB adatkészlettel fogunk dolgozni: ez 50 000 erősen polarizált véleményből álló halmaz az Internet Movie Database-ból. Ezek 25 000 képzési és 25 000 tesztelési véleményre vannak felosztva, amelyek mindegyike 50%-ban negatív és 50%-ban pozitív értékelésből áll.
 
@@ -84,7 +84,7 @@ decoded_review = " ".join(
                                                                   #     és az „ismeretlen” számára fenntartott indexek.
 ```
 
-###4.1.2 Az adatok előkészítése
+### 4.1.2 Az adatok előkészítése
 
 Az egész számok listáit nem lehet közvetlenül betáplálni egy neurális hálózatba. Mindegyik különböző hosszúságú, de a neurális hálózatok összefüggő adatkötegek feldolgozását várják. A listákat tenzorokká kell alakítania. Ennek két módja van:
 * Töltsük fel a listákat úgy, hogy mindegyik egyforma hosszúságú legyen, alakítsuk át őket `(samples, max_length)` alakú egész tenzorokká, és indítsuk el a modellt egy olyan réteggel, amely képes kezelni az ilyen egész tenzorokat (az `Embedding` réteggel, amelyet részletesen a könyv későbbi részében érintünk).
@@ -121,7 +121,7 @@ y_test = np.asarray(test_labels).astype("float32")
 ```
 Most az adatok készen állnak a neurális hálózatba való betáplálásra.
 
-###4.1.3 A modell elkészítése
+### 4.1.3 A modell elkészítése
 
 A bemeneti adatok vektorok, a címkék pedig skalárok (1-ek és 0-k): ez az egyik legegyszerűbb problémabeállítás, amellyel valaha találkozhat. Egy ilyen probléma esetén jól teljesítő modell a sűrűn összekapcsolt (`Dense`) rétegek sima kötege `relu` aktiválással.
 
@@ -201,7 +201,7 @@ model.compile(optimizer="rmsprop",
               metrics=["accuracy"])
 ```
 
-###4.1.4 A megközelítés kiértékelése
+### 4.1.4 A megközelítés kiértékelése
 
 Amint azt a 3. fejezetben megtanultuk, a mélytanulási modellt soha nem szabad a betanítási adatai alapján értékelni – bevett gyakorlat, hogy egy kiértékelési készletet használunk a modell pontosságának ellenőrzésére a képzés során. Itt létrehozunk egy kiértékelő készletet úgy, hogy 10 000 mintát elkülönítünk az eredeti képzési adatokból.
 
@@ -311,7 +311,7 @@ A végeredmény a következő:
 ```
 Ez a meglehetősen naiv megközelítés 88%-os pontosságot ér el. A legmodernebb megközelítésekkel közel 95%-ot érhetünk el.
 
-###4.1.5 Betanított modell használata az új adatokra vonatkozó előrejelzések generálásához
+### 4.1.5 Betanított modell használata az új adatokra vonatkozó előrejelzések generálásához
 
 A modell betanítása után gyakorlati környezetben szeretnénk azt használni. A 3. fejezetben megtanult `predict` metódussal a pozitív értékelések valószínűségét tudjuk generálni:
 
@@ -327,7 +327,7 @@ array([[ 0.98006207]
 ```
 Amint látható, a modell bizonyos minták esetében magabiztos (0,99 vagy több, illetve 0,01 vagy kevesebb), míg mások esetében kevésbé magabiztos (0,6, 0,4).
 
-###4.1.6 További kísérletek
+### 4.1.6 További kísérletek
 
 A következő kísérletek segítenek meggyőzni arról, hogy az architektúra által hozott döntések meglehetősen ésszerűek, bár van még hova fejlődni:
 * Két reprezentációs réteget használtunk a végső osztályozási réteg előtt. Próbáljunk meg egy vagy három ábrázolási réteget használni, és nézzük meg, hogy ez hogyan befolyásolja a kiértékelést és a teszt pontosságát.
@@ -335,7 +335,7 @@ A következő kísérletek segítenek meggyőzni arról, hogy az architektúra �
 * Próbáljuk meg az `mse` veszteségfüggvényt használni a `binary_crossentropy` helyett.
 * Próbáljuk meg a `tanh` aktiválást (ez a neurális hálózatok korai időszakában volt népszerű) a `relu` helyett.
 
-###4.1.7 Összefoglalás
+### 4.1.7 Összefoglalás
 
 A következőket érdemes levonni ebből a példából:
 * Általában elég sok előfeldolgozást kell végeznie a nyers adatokon, hogy azokat – tenzorként – be tudja tölteni egy neurális hálózatba. A szavak sorozatai kódolhatók bináris vektorokként, de vannak más kódolási lehetőségek is.
@@ -345,7 +345,7 @@ A következőket érdemes levonni ebből a példából:
 * Az `rmsprop` optimalizáló általában elég jó választás, bármilyen probléma is legyen. Így egy dologgal kevesebb, ami miatt aggódnia kell.
 * Ahogy javulnak a képzési adataikon, a neurális hálózatok végül túltanulásnak indulnak, és egyre rosszabb eredményeket érnek el olyan adatokon, amelyeket korábban soha nem láttak. Ügyeljen arra, hogy mindig figyelje a teljesítményt azokon az adatokon, amelyek kívül esnek az betanítási halmazon.
 
-##4.2 Híradók osztályozása: Többosztályos osztályozási példa
+## 4.2 Híradók osztályozása: Többosztályos osztályozási példa
 
 Az előző részben láthattuk, hogyan lehet a vektorbemeneteket két egymást kizáró osztályba sorolni sűrűn összekapcsolt neurális hálózat segítségével. De mi történik, ha kettőnél több osztályunk van?
 
