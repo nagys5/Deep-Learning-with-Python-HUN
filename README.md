@@ -34,6 +34,8 @@ Egyéb linkek a könyvvel kapcsolatban:
 
 **Egyéb irodalom magyar nyelven**
 
-Horváth Gábor szerk. – Neurális hálózatok (Panem, 2006) - Szótár is a 439-441. oldalon!
+Horváth Gábor szerk.: Neurális hálózatok (Panem, 2006) - Szótár is a 439-441. oldalon!
 
-Brassai Sándor Tihamér - NEURÁLIS HÁLÓZATOK ÉS FUZZY LOGIKA (Sapientia, 2019)
+Brassai Sándor Tihamér: NEURÁLIS HÁLÓZATOK ÉS FUZZY LOGIKA (Sapientia, 2019)
+
+Russell, Norvig: Mesterséges intelligencia - Modern megközelítésben, 2.kiad. (Panem. 2005)
