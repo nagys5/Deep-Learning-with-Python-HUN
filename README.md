@@ -36,6 +36,6 @@ Egyéb linkek a könyvvel kapcsolatban:
 
 Horváth Gábor szerk.: Neurális hálózatok (Panem, 2006) - **Szótár** is a 439-441. oldalon!
 
-Brassai Sándor Tihamér: Neurális hálózatok és fuzzy logika (Sapientia, 2019)
+Brassai Sándor Tihamér: [Neurális hálózatok](http://real.mtak.hu/122603/1/BrassaiSandor_Neuralis%20halozatok_REAL.pdf) és fuzzy logika (Sapientia, 2019)
 
 Russell, Norvig: Mesterséges intelligencia - Modern megközelítésben, 2.kiad. (Panem. 2005)
