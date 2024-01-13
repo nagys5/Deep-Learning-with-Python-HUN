@@ -31,3 +31,8 @@ Egyéb linkek a könyvvel kapcsolatban:
 [A szerző tárolója a Python cellák tartalmából](https://github.com/fchollet/deep-learning-with-python-notebooks)
 
 [Eredeti könyv PDF](https://sourestdeeds.github.io/pdf/Deep%20Learning%20with%20Python.pdf)
+
+**Egyéb irodalom magyar nyelven**
+
+Horváth Gábor szerk. – Neurális hálózatok (Panem, 2006) - Szótár is a 439-441. oldalon!
+Brassai Sándor Tihamér - NEURÁLIS HÁLÓZATOK ÉS FUZZY LOGIKA (Sapientia, 2019)
