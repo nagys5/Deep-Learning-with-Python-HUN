@@ -36,6 +36,12 @@ Egyéb linkek a könyvvel kapcsolatban:
 
 Horváth Gábor szerk.: Neurális hálózatok (Panem, 2006) - **Szótár** is a 439-441. oldalon!
 
+Fazekas István: [Neurális hálózatok.](https://gyires.inf.unideb.hu/GyBITT/19/Neuralis_halozatok_v8.pdf) (Debrecen, 2013)
+
 Brassai Sándor Tihamér: [Neurális hálózatok](http://real.mtak.hu/122603/1/BrassaiSandor_Neuralis%20halozatok_REAL.pdf) és fuzzy logika (Sapientia, 2019)
 
-Russell, Norvig: Mesterséges intelligencia - Modern megközelítésben, 2.kiad. (Panem. 2005)
+Russell, Norvig: Mesterséges intelligencia - Modern megközelítésben, 2.kiad. (Panem, 2005)
+
+Dr. Kutor László prezentációi (Intelligens Rendszerek Elmélete 1-10)
+
+Dr. Kutor László [YouTube videói](https://www.youtube.com/playlist?list=PLSBcNSXgMqrfme530QKqLGJBqt8HN0sCd) (18 db) az Óbudai Egyetemről.
