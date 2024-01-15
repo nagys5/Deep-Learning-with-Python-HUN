@@ -22,7 +22,7 @@ A GitHub repository [itt érhető el](https://github.com/nagys5/Deep-Learning-wi
 
 ---
 
-Mivel elég lassan gépelek, ezért a fordítást a Google Fordítóval végeztem majd átmásoltam, de utána végigolvastam cellánként és ahol nagyon félreértette vagy nagyon zavaró magyartalanságot írt, ott javítottam. (Bárcsak ilyen kevés helyesírási hiba lenne a fórumokon!) 
+Mivel elég lassan gépelek, ezért a fordítást a Google Fordítóval végeztem majd átmásoltam, de utána végigolvastam cellánként és ahol félreértette vagy nagyon zavaró magyartalanságot írt, ott javítottam. (Bárcsak ilyen kevés helyesírási hiba lenne a fórumokon!) 
 
 A fordítás notebookja (.ipynb fájlja) a Google Colab-ban készült. 
 
@@ -36,7 +36,7 @@ Egyéb linkek a könyvvel kapcsolatban:
 
 Horváth Gábor szerk.: Neurális hálózatok (Panem, 2006) - **Szótár** is a 439-441. oldalon!
 
-Fazekas István: [Neurális hálózatok.](https://gyires.inf.unideb.hu/GyBITT/19/Neuralis_halozatok_v8.pdf) (Debrecen, 2013)
+Fazekas István: [Neurális hálózatok](https://gyires.inf.unideb.hu/GyBITT/19/Neuralis_halozatok_v8.pdf) (Debrecen, 2013)
 
 Brassai Sándor Tihamér: [Neurális hálózatok](http://real.mtak.hu/122603/1/BrassaiSandor_Neuralis%20halozatok_REAL.pdf) és fuzzy logika (Sapientia, 2019)
 
