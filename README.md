@@ -34,7 +34,7 @@ Egyéb linkek a könyvvel kapcsolatban:
 
 **Egyéb irodalom magyar nyelven**
 
-Horváth Gábor szerk.: Neurális hálózatok (Panem, 2006) - **Szótár** is a 439-441. oldalon!
+Horváth Gábor szerk.: [Neurális hálózatok](https://dtk.tankonyvtar.hu/bitstream/handle/123456789/8850/0026_neuralis_4_4.pdf?sequence=2&isAllowed=y) (Panem, 2006) - **Szótár** is a 439-441. oldalon!
 
 Fazekas István: [Neurális hálózatok](https://gyires.inf.unideb.hu/GyBITT/19/Neuralis_halozatok_v8.pdf) (Debrecen, 2013)
 
