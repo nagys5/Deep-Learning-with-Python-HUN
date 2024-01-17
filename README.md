@@ -40,7 +40,7 @@ Fazekas István: [Neurális hálózatok](https://gyires.inf.unideb.hu/GyBITT/19/
 
 Brassai Sándor Tihamér: [Neurális hálózatok](http://real.mtak.hu/122603/1/BrassaiSandor_Neuralis%20halozatok_REAL.pdf) és fuzzy logika (Sapientia, 2019)
 
-Russell, Norvig: [Mesterséges intelligencia - Modern megközelítésben](https://web.archive.org/web/20201004013724/https://regi.tankonyvtar.hu/hu/tartalom/tamop425/0026_mi_4_4/0026_mi_4_4.pdf), 2.kiad. (Panem, 2005)
+Russell, Norvig: [Mesterséges intelligencia - Modern megközelítésben](https://web.archive.org/web/20201004013724/https://regi.tankonyvtar.hu/hu/tartalom/tamop425/0026_mi_4_4/0026_mi_4_4.pdf), 2. kiad. (Panem, 2005)
 
 Dr. Kutor László prezentációi (Intelligens Rendszerek Elmélete 1-10)
 
