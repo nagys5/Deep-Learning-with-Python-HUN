@@ -45,3 +45,6 @@ Russell, Norvig: [Mesterséges intelligencia - Modern megközelítésben](https:
 Dr. Kutor László prezentációi (Intelligens Rendszerek Elmélete 1-10)
 
 Dr. Kutor László [YouTube videói](https://www.youtube.com/playlist?list=PLSBcNSXgMqrfme530QKqLGJBqt8HN0sCd) (18 db) Óbudai Egyetem, 2016.
+
+[Fogalomtár](https://web.archive.org/web/20221202163258/https://mialmanach.mit.bme.hu/fogalomtar)
+
