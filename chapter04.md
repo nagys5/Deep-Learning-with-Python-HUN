@@ -351,4 +351,583 @@ Az előző részben láthattuk, hogyan lehet a vektorbemeneteket két egymást k
 
 Ebben a részben felépítünk egy modellt a Reuters hírszolgálatokat 46 egymást kizáró témába történő besorolására. Mivel sok osztályunk van, ez a probléma a _többosztályos osztályozás_ egy példánya, és mivel minden adatpontot csak egy kategóriába kell besorolni, a probléma pontosabban az _egycímkés többosztályos osztályozás_ egy példánya. Ha minden adatpont több kategóriába is tartozhatna (jelen esetben témakörökhöz), akkor _többcímkés, több osztályú osztályozási_ problémával kell szembenéznünk.
 
+### 4.2.1 A Reuters adatkészlet
 
+A Reuters által 1986-ban közzétett _Reuters adatkészlettel_ fogunk dolgozni, amelyet rövid híradások és azok témája alkot. Ez egy egyszerű, széles körben használt játékadatkészlet szövegosztályozáshoz. 46 különböző téma van; egyes témakörök jobban képviseltetik magukat, mint mások, de minden témából van legalább 10 példa a képzési készletben.
+
+Az IMDB-hez és az MNIST-hez hasonlóan a Reuters adatkészlet is a Keras részeként érkezik. Lássuk.
+
+**4.11 lista: A Reuters adatkészlet betöltése**
+
+
+```python
+from tensorflow.keras.datasets import reuters
+(train_data, train_labels), (test_data, test_labels) = reuters.load_data(
+    num_words=10000)
+```
+
+Az IMDB adatkészlethez hasonlóan a `num_words=10000` argumentum az adatokban található 10 000 leggyakrabban előforduló szóra korlátozza az adatokat.
+
+8982 képzési példánk és 2246 tesztpéldánk lesz:
+
+```
+>>> len(train_data)
+8982
+>>> len(test_data)
+2246
+```
+Az IMDB áttekintésekhez hasonlóan minden példa egész számok (szóindexek) listája:
+
+```
+>>> train_data[10]
+[1, 245, 273, 207, 156, 53, 74, 160, 26, 14, 46, 296, 26, 39, 74, 2979,
+3554, 14, 46, 4689, 4329, 86, 61, 3499, 4795, 14, 61, 451, 4329, 17, 12]
+```
+Így dekódolhatod vissza szavakra, ha kíváncsi vagy rá.
+
+**4.12 lista: Híradók visszakódolása szöveggé**
+
+
+```python
+word_index = reuters.get_word_index()
+reverse_word_index = dict(
+    [(value, key) for (key, value) in word_index.items()])
+decoded_newswire = " ".join(
+    [reverse_word_index.get(i - 3, "?") for i in train_data[0]])  #<--- Vegye észre, hogy az indexek 3-mal el vannak tolva,
+                                                                  #     mivel a 0, 1 és 2 a „kitöltés”, a „sorozat kezdete”
+                                                                  #     és az „ismeretlen” számára fenntartott indexek.
+```
+
+A példához tartozó címke egy 0 és 45 közötti egész szám – a témaindex:
+
+```
+>>> train_labels[10]
+3
+```
+
+### 4.2.2 Az adatok előkészítése
+
+Az adatokat pontosan ugyanazzal a kóddal vektorizálhatjuk, mint az előző példában.
+
+**4.13 lista: A bemeneti adatok kódolása**
+
+
+```python
+x_train = vectorize_sequences(train_data)   #<--- Vektorizált betanítási adatok
+x_test = vectorize_sequences(test_data)     #<--- Vektorizált tesztadatok
+```
+
+A címkék vektorizálására két lehetőség van: a címkelistát egész tenzor formába foglalhatjuk, vagy használhatunk _One-hot kódolást_. A One-hot kódolás a kategorikus adatok széles körben használt formátuma, más néven _kategorikus kódolás_. Ebben az esetben a címkék one-hot kódolása abból áll, hogy minden címkét nullvektorként ágyazunk be, és a címkeindex helyére 1-et állítunk be. A következő lista mutat egy példát.
+
+**4.14 lista: A címkék kódolása**
+
+
+```python
+def to_one_hot(labels, dimension=46):
+    results = np.zeros((len(labels), dimension))
+    for i, label in enumerate(labels):
+        results[i, label] = 1.
+    return results
+y_train = to_one_hot(train_labels)    #<--- Vektorizált képzési címkék
+y_test = to_one_hot(test_labels)      #<--- Vektorizált teszt címkék
+```
+
+Jegyezze meg, hogy a Kerasban van erre egy beépített módszer:
+
+
+```python
+from tensorflow.keras.utils import to_categorical
+y_train = to_categorical(train_labels)
+y_test = to_categorical(test_labels)
+```
+
+###4.2.3 A modell elkészítése
+
+Ez a témabesorolási probléma hasonlít az előző filmkritika besorolási problémájához: mindkét esetben rövid szövegrészleteket próbálunk besorolni. De itt van egy új megszorítás: a kimeneti osztályok száma 2-ről 46-ra nőtt. A kimeneti tér dimenziója/mérete sokkal nagyobb.
+
+Az általunk használt `Dense` rétegek kötegében mindegyik réteg csak az előző réteg kimenetében lévő információkhoz képes hozzáférni. Ha az egyik réteg eldob néhány, az osztályozási probléma szempontjából fontos információt, ezt az információt a későbbi rétegek soha nem tudják visszanyerni: minden réteg információs szűk keresztmetszetté válhat. Az előző példában 16 dimenziós közbenső rétegeket használtunk, de egy 16 dimenziós tér túl szűk lehet ahhoz, hogy megtanítsuk 46 különböző osztályt elkülöníteni: az ilyen kis rétegek információs szűk keresztmetszetként működhetnek, és végleg kidobják a releváns információkat.
+
+Emiatt nagyobb rétegeket fogunk használni. Induljunk 64 egységgel.
+
+**4.15 lista: Modell definíció**
+
+
+```python
+model = keras.Sequential([
+    layers.Dense(64, activation="relu"),
+    layers.Dense(64, activation="relu"),
+    layers.Dense(46, activation="softmax")
+])
+```
+
+Van még két dolog, amit érdemes megjegyezni ezzel az architektúrával kapcsolatban.
+
+Először is, egy 46-os `Dense` réteggel zárjuk le a modellt. Ez azt jelenti, hogy mindegyik bemeneti mintához a hálózat egy 46 dimenziós vektort ad ki. Ebben a vektorban (mindegyik dimenziójában) mindegyik bejegyzés más kimeneti osztályt kódol.
+
+Másodszor, az utolsó réteg `softmax` aktiválást használ. Láttuk már ezt a mintát az MNIST példában. Ez azt jelenti, hogy a modell egy _valószínűségi eloszlást_ fog kiadni a 46 különböző kimeneti osztályra – minden bemeneti mintához a modell egy 46 dimenziós kimeneti vektort állít elő, ahol a `output[i]` annak a valószínűsége, hogy a minta az `i`. osztályba tartozik. A 46 pontszám összege 1.
+
+Ebben az esetben a legjobb veszteségfüggvény a `categorical_crossentropy`. Két valószínűségi eloszlás közötti távolságot mér: itt a modell valószínűségi eloszlási kimenete és a címkék valódi eloszlása között. A két eloszlás közötti távolság minimalizálásával tanítjuk meg a modellt, hogy a valódi címkéhez lehető legközelebb állót adja ki.
+
+**4.16 lista: A modell összeállítása**
+
+
+```python
+model.compile(optimizer="rmsprop",
+              loss="categorical_crossentropy",
+              metrics=["accuracy"])
+```
+
+###4.2.4 A megközelítés kiértékelése
+
+Válasszunk ki 1000 mintát a betanítási adatokból, amelyeket kiértékelési halmazként használunk.
+
+**4.17 lista: Kiértékelési készlet félretétele**
+
+
+```python
+x_val = x_train[:1000]
+partial_x_train = x_train[1000:]
+y_val = y_train[:1000]
+partial_y_train = y_train[1000:]
+```
+
+Most pedig tanítsuk a modellt 20 szakaszban.
+
+**4.18 lista: A modell betanítása**
+
+
+```python
+history = model.fit(partial_x_train,
+                    partial_y_train,
+                    epochs=20,
+                    batch_size=512,
+                    validation_data=(x_val, y_val))
+```
+
+Végül pedig jelenítsük meg a veszteségi és pontossági görbéit (lásd a 4.6. és 4.7. ábrát).
+
+![](figs/f4.6_.jpg)
+
+**4.6. ábra:** Betanítási és kiértékelési veszteség
+
+![](figs/f4.7_.jpg)
+
+**4.7. ábra:** A betanítás és a kiértékelés pontossága
+
+**4.19 lista: A betanítási és kiértékelési veszteség ábrázolása**
+
+
+```python
+loss = history.history["loss"]
+val_loss = history.history["val_loss"]
+epochs = range(1, len(loss) + 1)
+plt.plot(epochs, loss, "bo", label="Training loss")
+plt.plot(epochs, val_loss, "b", label="Validation loss")
+plt.title("Training and validation loss")
+plt.xlabel("Epochs")
+plt.ylabel("Loss")
+plt.legend()
+plt.show()
+```
+
+**4.20 lista: A betanítás és a kiértékelés pontosságának ábrázolása**
+
+
+```python
+plt.clf()     #<--- Törli az ábrát
+acc = history.history["accuracy"]
+val_acc = history.history["val_accuracy"]
+plt.plot(epochs, acc, "bo", label="Training accuracy")
+plt.plot(epochs, val_acc, "b", label="Validation accuracy")
+plt.title("Training and validation accuracy")
+plt.xlabel("Epochs")
+plt.ylabel("Accuracy")
+plt.legend()
+plt.show()
+```
+
+A modell kilenc korszak után kezd túltanulni. Tanítsunk meg egy új modellt a nulláról kilenc korszakon keresztül, majd értékeljük ki a tesztkészleten.
+
+**4.21 lista: Modell újbóli tanítása a semmiből**
+
+
+```python
+model = keras.Sequential([
+    layers.Dense(64, activation="relu"),
+    layers.Dense(64, activation="relu"),
+    layers.Dense(46, activation="softmax")
+])
+model.compile(optimizer="rmsprop",
+              loss="categorical_crossentropy",
+              metrics=["accuracy"])
+model.fit(x_train,
+          y_train,
+          epochs=9,
+          batch_size=512)
+results = model.evaluate(x_test, y_test)
+```
+
+Íme a végső eredmények:
+
+```
+>>> results
+[0.9565213431445807, 0.79697239536954589]
+```
+Ez a megközelítés eléri a ~80%-os pontosságot. Egy kiegyensúlyozott bináris osztályozási probléma esetén a tisztán véletlenszerű osztályozó által elért pontosság 50%. De ebben az esetben 46 osztályunk van, és előfordulhat, hogy nem egyformán képviseltetik magukat. Mi lenne a véletlenszerű alapvonal pontossága? Megpróbálhatnánk egyet gyorsan megvalósítani, hogy ezt empirikusan ellenőrizzük:
+
+```
+>>> import copy
+>>> test_labels_copy = copy.copy(test_labels)
+>>> np.random.shuffle(test_labels_copy)
+>>> hits_array = np.array(test_labels) == np.array(test_labels_copy)
+>>> hits_array.mean()
+0.18655387355298308
+```
+Amint látható, egy véletlenszerű osztályozó 19% körüli osztályozási pontosságot érne el, így a modellünk eredményei ebben a megvilágításban elég jónak tűnnek.
+
+###4.2.5 Előrejelzések generálása új adatokra
+
+A modell `predict` metódusának meghívása új mintákra osztályvalószínűségi eloszlást ad vissza mind a 46 témára mindegyik mintánál. Készítsünk téma előrejelzéseket az összes tesztadathoz:
+
+```
+predictions = model.predict(x_test)
+```
+A „predictions” mindegyik bejegyzése egy 46 hosszúságú vektor:
+
+```
+>>> predictions[0].shape
+(46,)
+```
+
+Ebben a vektorban az együtthatók összege 1, mivel valószínűségi eloszlást alkotnak:
+
+```
+>>> np.sum(predictions[0])
+1.0
+```
+
+A legnagyobb bejegyzés az előrejelzett osztály – a legnagyobb valószínűségű osztály:
+
+```
+>>> np.argmax(predictions[0])
+4
+```
+
+###4.2.6 A címkék és a veszteség kezelésének másik módja
+
+Korábban említettük, hogy a címkék kódolásának másik módja az lenne, ha egész tenzorként öntnénk őket, például:
+
+```
+y_train = np.array(train_labels)
+y_test = np.array(test_labels)
+```
+
+Ez a megközelítés csak a veszteségfüggvény megválasztásán változtatna. A 4.21-es listában használt veszteségfüggvény (`categorical_crossentropy`) elvárja, hogy a címkék kategorikus kódolást kövessenek. Integer címkék esetén használjuk a `sparse_categorical_crossentropy`-t:
+
+```
+model.compile(optimizer="rmsprop",
+              loss="sparse_categorical_crossentropy",
+              metrics=["accuracy"])
+```
+Ez az új veszteségfüggvény matematikailag továbbra is ugyanaz, mint a `categorical_crossentropy`; csak más a felülete.
+
+###4.2.7 A kellően nagy köztes rétegek fontossága
+
+Korábban említettük, hogy mivel a végső kimenet 46 dimenziós, kerüljük a 46-nál kevesebb egységet tartalmazó köztes rétegeket. Most pedig nézzük meg, mi történik, ha bevezetünk egy információs szűk keresztmetszetet azáltal, hogy olyan közbenső rétegeket alkalmazunk, amelyek lényegesen kisebbek, mint 46 dimenziós: például 4 dimenziós.
+
+**4.22. lista: Szűk információs keresztmetszetű modell**
+
+
+```python
+model = keras.Sequential([
+    layers.Dense(64, activation="relu"),
+    layers.Dense(4, activation="relu"),
+    layers.Dense(46, activation="softmax")
+])
+model.compile(optimizer="rmsprop",
+              loss="categorical_crossentropy",
+              metrics=["accuracy"])
+model.fit(partial_x_train,
+          partial_y_train,
+          epochs=20,
+          batch_size=128,
+          validation_data=(x_val, y_val))
+```
+
+A modell most ~71%-os kiértékelési pontossággal tetőzik, ami 8%-os abszolút csökkenést jelent. Ez a visszaesés leginkább annak tudható be, hogy sok információt (elegendő információt a 46 osztály elválasztási hipersíkjainak helyreállításához) próbálunk egy túl kevés dimenziójú köztes térbe tömöríteni. A modell a legtöbb szükséges információt be tudja zsúfolni ezekbe a négydimenziós reprezentációkba, de nem az összeset.
+
+###4.2.8 További kísérletek
+
+Az előző példához hasonlóan arra bátorítom önt, hogy próbálja ki a következő kísérleteket, hogy fejlessze a megérzését azzal kapcsolatban, hogy milyen konfigurációs döntéseket kell meghoznia az ilyen modelleknél:
+* Próbáljon meg nagyobb vagy kisebb rétegeket használni: 32 egység, 128 egység stb.
+* Az előbb két köztes réteget használt a végső softmax osztályozási réteg előtt. Most próbáljon meg egyetlen köztes réteget vagy három köztes réteget használni.
+
+###4.2.9 Összefoglalás
+
+A következőket érdemes levonni ebből a példából:
+* Ha az adatpontokat _N_ osztályba próbálja besorolni, a modellnek egy _N_ méretű `Dense` réteggel kell végződnie.
+* Egycímkés, többosztályú osztályozási probléma esetén a modellnek egy `softmax` aktiválással kell végződnie, hogy _N_ kimeneti osztályra kiterjedő valószínűségi eloszlást adjon ki.
+* A kategorikus keresztentrópia szinte mindig az a veszteségfüggvény, amelyet ilyen problémák esetén használni kell. Ez minimalizálja a távolságot a modell által kiadott valószínűségi eloszlások és a célok valódi eloszlása között.
+* A címkék többosztályos osztályozásban történő kezelésének két módja van:
+    * – A címkék kódolása kategorikus kódolással (más néven one-hot kódolás), és veszteségfüggvényként a `categorical_crossentropy` használatával
+    * – A címkék egész számként történő kódolása és a `sparse_categorical_crossentropy` loss függvény használata
+* Ha az adatokat nagyszámú kategóriába kell besorolni, akkor kerülje el, hogy a túl kicsi köztes rétegek miatt információs szűk keresztmetszetek jöjjenek létre a modellben.
+
+##4.3 Lakásárak előrejelzése: egy regressziós példa
+
+Az előző két példát osztályozási problémának tekintettük, ahol a cél egy bemeneti adatpont egyetlen diszkrét címkéjének előrejelzése volt. A gépi tanulási probléma másik gyakori típusa a regresszió, amely egy folytonos érték előrejelzéséből áll a diszkrét címke helyett: például a holnapi hőmérséklet előrejelzése, meteorológiai adatok vagy egy szoftverprojekt befejezési idejének előrejelzése a specifikációi alapján.
+
+MEGJEGYZÉS
+>Ne keverje össze a _regressziót_ és a _logisztikus regressziós_ algoritmust. Zavarba ejtő az, hogy a logisztikus regresszió nem egy regressziós algoritmus, hanem egy osztályozási algoritmus.
+
+###4.3.1 A bostoni lakásárak adathalmaza
+
+Ebben a részben megpróbáljuk megjósolni a lakások medián árát egy adott Boston külvárosban az 1970-es évek közepén, a külvárosra vonatkozó akkori adatpontok alapján, mint például a bűnözési ráta, a helyi ingatlanadó kulcsa és így tovább. Az általunk használt adatkészlet érdekes eltérést mutat az előző két példához képest. Viszonylag kevés adatponttal rendelkezik: csak 506, elosztva 404 tanítási minta és 102 tesztminta között. És a bemeneti adatok minden jellemzője (például a bűnözési ráta) más-más léptékű. Például egyes értékek arányok, amelyek 0 és 1 közötti értékeket vesznek fel, mások 1 és 12 közötti értékeket, mások 0 és 100 közötti értékeket és így tovább.
+
+**4.23 lista: A bostoni lakás adatkészlet betöltése**
+
+
+```python
+from tensorflow.keras.datasets import boston_housing
+(train_data, train_targets), (test_data, test_targets) = (
+    boston_housing.load_data())
+```
+
+Nézzük az adatokat:
+
+```
+>>> train_data.shape
+(404, 13)
+>>> test_data.shape
+(102, 13)
+```
+
+Amint látható, 404 képzési mintánk és 102 tesztmintánk van, amelyek mindegyike 13 numerikus jellemzővel rendelkezik, mint például az egy főre eső bűnözési ráta, az átlagos szobák száma egy lakásban, az autópályák megközelíthetősége és így tovább.
+
+A célok a saját tulajdonú házak mediánértékei, több ezer dollárban:
+
+```
+>>> train_targets
+[ 15.2, 42.3, 50. ... 19.4, 19.4, 29.1]
+```
+
+Az árak általában 10 000 és 50 000 dollár között mozognak. Ha ez olcsónak hangzik, ne feledje, hogy ez az 1970-es évek közepe volt, és ezek az árak nincsenek az inflációhoz igazítva.
+
+###4.3.2 Az adatok előkészítése
+
+Problémás lenne olyan értékeket betáplálni egy neurális hálózatba, amelyek mindegyike vadul eltérő tartományt vesz fel. A modell képes lehet automatikusan alkalmazkodni az ilyen heterogén adatokhoz, de mindenképpen megnehezítené a tanulást. Az ilyen adatok kezelésére általánosan elterjedt bevált gyakorlat a jellemzők szerinti normalizálás: a bemeneti adatok minden egyes jellemzőjéhez (a bemeneti adatmátrix egy oszlopához) kivonjuk a jellemző átlagát, és elosztjuk a szórással, így a jellemző 0 körül van, és egységnyi szórása van. Ez egyszerűen megtehető a NumPy-ban.
+
+**4.24 lista: Az adatok normalizálása**
+
+
+```python
+mean = train_data.mean(axis=0)
+train_data -= mean
+std = train_data.std(axis=0)
+train_data /= std
+test_data -= mean
+test_data /= std
+```
+
+Jegyezze meg, hogy a tesztadatok normalizálására használt mennyiségek a betanítási adatok felhasználásával kerülnek kiszámításra. Soha ne használjon a munkafolyamatban a tesztadatokon kiszámított mennyiséget, még olyan egyszerű műveleteknél sem, mint az adatok normalizálása.
+
+###4.3.3 A modell felépítése
+
+Mivel nagyon kevés minta áll rendelkezésre, egy nagyon kicsi modellt fogunk használni, két köztes réteggel, mindegyikben 64 elemmel. Általánosságban elmondható, hogy minél kevesebb betanítási adatunk van, annál erősebb lesz a túltanulás, és egy kis modell használata az egyik módja a túltanulás csökkentésének.
+
+**4.25 lista: Modell definiálása**
+
+
+```python
+def build_model():
+    model = keras.Sequential([                #<--- Mivel ugyanazt a modellt többször kell példányosítani,
+                                              #     egy függvényt használunk a létrehozásához.
+        layers.Dense(64, activation="relu"),
+        layers.Dense(64, activation="relu"),
+        layers.Dense(1)
+    ])
+    model.compile(optimizer="rmsprop", loss="mse", metrics=["mae"])
+    return model
+```
+
+A modell egyetlen elemmel végződik, és nincs aktiválás (ez egy lineáris réteg lesz). Ez a skaláris regresszió tipikus beállítása (olyan regresszió, ahol egyetlen folytonos értéket próbálunk megjósolni). Az aktiválási függvény alkalmazása korlátozná a kimenet hatótávolságát; Például, ha szigmoid aktiválási függvényt alkalmazott az utolsó rétegre, a modell csak 0 és 1 közötti értékeket tudna megjósolni. Itt, mivel az utolsó réteg tisztán lineáris, a modell szabadon megtanulhatja megjósolni az értékeket bármilyen tartományban.
+
+Vegye észre, hogy a modellt az `mse` veszteségfüggvénnyel állítjuk össze – ami az átlagos négyzetes hiba; az előrejelzések és a célok közötti különbség négyzete. Ez a széles körben használt veszteségfüggvény regressziós problémák esetén.
+
+A betanítás során egy új mérőszámot is figyelünk: az átlagos abszolút hibát (MAE). Ez az előrejelzések és a célok közötti különbség abszolút értéke. Például a 0,5 MAE ennél a problémánál azt jelenti, hogy az előrejelzései átlagosan 500 dollárral kisebbek.
+
+###4.3.4 A megközelítés kiértékelése K-szoros kiértékeléssel
+
+Modellünk értékeléséhez, miközben folyamatosan módosítjuk a paramétereit (például a betanításhoz használt korszakok számát), feloszthatjuk az adatokat egy betanítási halmazra és egy kiértékelési halmazra, ahogy az előző példákban tettük. De mivel olyan kevés adatpontunk van, az érvényesítési halmaz végül nagyon kicsi lesz (például körülbelül 100 példa). Ennek következtében a validálási pontszámok nagymértékben változhatnak attól függően, hogy melyik adatpontot választottuk kiértékeléshez, és melyiket választottuk a képzéshez: a validációs pontszámok nagy eltérést mutathatnak a validációs felosztás tekintetében. Ez megakadályozná, hogy megbízhatóan értékeljük modellünket.
+
+Ilyen helyzetekben a legjobb gyakorlat a _K-szoros_ keresztellenőrzés alkalmazása (lásd a 4.8. ábrát).
+
+![](figs/f4.8_.jpg)
+
+**4.8. ábra:** K-szoros keresztellenőrzés K=3-mal
+
+Ez abból áll, hogy a rendelkezésre álló adatokat K partícióra bontja (jellemzően K = 4 vagy 5), K azonos modellt példányosít, és mindegyiket K – 1 partíción tanítja, miközben kiértékeli a fennmaradó partíciót. A használt modell validációs pontszáma ekkor a kapott K validációs pontszámok átlaga. A kód szempontjából ez egyértelmű.
+
+**4.26 lista: K-szoros kiértékelés**
+
+
+```python
+k = 4
+num_val_samples = len(train_data) // k
+num_epochs = 100
+all_scores = []
+for i in range(k):
+    print(f"Processing fold #{i}")
+    val_data = train_data[i * num_val_samples: (i + 1) * num_val_samples]   #<--- Előkészíti a kiértékelési adatokat:
+                                                                            #     adatok a #k partícióból
+    val_targets = train_targets[i * num_val_samples: (i + 1) * num_val_samples]
+    partial_train_data = np.concatenate(              #<--- Előkészíti a betanítási adatokat: az összes többi partíció adatait
+        [train_data[:i * num_val_samples],
+         train_data[(i + 1) * num_val_samples:]],
+        axis=0)
+    partial_train_targets = np.concatenate(
+        [train_targets[:i * num_val_samples],
+         train_targets[(i + 1) * num_val_samples:]],
+        axis=0)
+    model = build_model()                                   #<--- Felépíti a Keras modellt (már összeállítva)
+    model.fit(partial_train_data, partial_train_targets,    #<--- Betanítja a modellt (néma módban, verbose = 0)
+              epochs=num_epochs, batch_size=16, verbose=0)
+    val_mse, val_mae = model.evaluate(val_data, val_targets, verbose=0) #<--- Kiértékeli a modellt a kiértékelési adatokon
+    all_scores.append(val_mae)
+```
+
+Ennek futtatása `num_epochs = 100` értékkel a következő eredményeket adja:
+
+```
+>>> all_scores
+[2.112449, 3.0801501, 2.6483836, 2.4275346]
+>>> np.mean(all_scores)
+2.5671294
+```
+A különböző futtatások valóban meglehetősen eltérő értékelési pontszámot mutatnak, 2,1-től 3,1-ig. Az átlag (2,6) sokkal megbízhatóbb mérőszám, mint bármely egyedi pontszám – ez a K-szoros keresztellenőrzés lényege. Ebben az esetben átlagosan 2600 dollárral vagyunk eltérésben, ami jelentős, tekintve, hogy az árak 10 000 és 50 000 dollár között mozognak.
+
+Próbáljuk meg egy kicsit tovább képezni a modellt: 500 korszakkal. Annak érdekében, hogy rögzítsük a modell teljesítményét az egyes korszakokban, módosítani fogjuk a betanítási hurkot, hogy minden fordulóban elmentsük a korszakonkénti érvényesítési pontszám naplózását.
+
+**4.27. lista: A kiértékelési naplók mentése minden fordulóban**
+
+
+```python
+num_epochs = 500
+all_mae_histories = []
+for i in range(k):
+    print(f"Processing fold #{i}")
+    val_data = train_data[i * num_val_samples: (i + 1) * num_val_samples]   #<--- Előkészíti az érvényesítési adatokat:
+                                                                            #     adatok a #k partícióból
+    val_targets = train_targets[i * num_val_samples: (i + 1) * num_val_samples]
+    partial_train_data = np.concatenate(              #<--- Előkészíti a betanítási adatokat: az összes többi partíció adatait
+        [train_data[:i * num_val_samples],
+         train_data[(i + 1) * num_val_samples:]],
+        axis=0)
+    partial_train_targets = np.concatenate(
+        [train_targets[:i * num_val_samples],
+         train_targets[(i + 1) * num_val_samples:]],
+        axis=0)
+    model = build_model()                             #<--- Felépíti a Keras modellt (már összeállítva)
+    history = model.fit(partial_train_data, partial_train_targets,    #<--- Betanítja a modellt (néma módban, verbose=0)
+                        validation_data=(val_data, val_targets),
+                        epochs=num_epochs, batch_size=16, verbose=0)
+    mae_history = history.history["val_mae"]
+    all_mae_histories.append(mae_history)
+```
+
+Ezután kiszámíthatjuk a korszakonkénti MAE pontszámok átlagát az összes fordulóra.
+
+**4.28. lista: Az egymást követő átlag K-szoros validációs pontszámok történetének felépítése**
+
+
+```python
+average_mae_history = [
+    np.mean([x[i] for x in all_mae_histories]) for i in range(num_epochs)]
+```
+
+Rajzoljuk fel ezt; lásd a 4.9 ábrát.
+
+**4.29 lista: A kiértékelési pontszámok ábrázolása**
+
+
+```python
+plt.plot(range(1, len(average_mae_history) + 1), average_mae_history)
+plt.xlabel("Epochs")
+plt.ylabel("Validation MAE")
+plt.show()
+```
+
+![](figs/f4.9_.jpg)
+
+**4.9. ábra:** A kiértékelési MAE korszakonként
+
+A skála olvasása kissé nehézkes lehet méretezési hiba miatt: az első néhány korszak érvényesítési MAE-je drámaian nagyobb, mint a következő értékek.
+Hagyjuk ki az első 10 adatpontot, amelyek más léptékűek, mint a görbe többi része.
+
+**4.30 lista: A kiértékelési pontszámok ábrázolása, az első 10 adatpont kivételével**
+
+
+```python
+truncated_mae_history = average_mae_history[10:]
+plt.plot(range(1, len(truncated_mae_history) + 1), truncated_mae_history)
+plt.xlabel("Epochs")
+plt.ylabel("Validation MAE")
+plt.show()
+```
+
+Amint a 4.10. ábrán látható, a kiértékelési MAE 120–140 korszak után nem javul jelentősen (ez a szám tartalmazza azt a 10 időszakot, amelyet kihagytunk). Ezen a ponton túl elkezdődik a túltanulás.
+
+Miután befejezte a modell egyéb paramétereinek hangolását (az epochok számán kívül a közbenső rétegek méretét is módosíthatja), betaníthatja a végső gyártási modellt az összes betanítási adatra, a legjobb paraméterek mellett, majd nézze meg a teljesítményét a tesztadatok alapján.
+
+**4.31 lista: A végleges modell betanítása**
+
+
+```python
+model = build_model()                             #<--- Friss, összeállított modellt kapunk
+model.fit(train_data, train_targets,              #<--- Az adatok összességére tanítjuk
+          epochs=130, batch_size=16, verbose=0)
+test_mse_score, test_mae_score = model.evaluate(test_data, test_targets)
+```
+
+![](figs/f4.10_.jpg)
+
+**4.10. ábra:** A kiértékelési MAE korszakonként, az első 10 adatpont kivételével
+
+Íme a végeredmény:
+
+```
+>>> test_mae_score
+2.4642276763916016
+```
+Még mindig 2500 dollár alatt vagyunk. Ez javulás! Csakúgy, mint az előző két feladatnál, itt is megpróbálhatjuk megváltoztatni a modellben lévő rétegek számát vagy a rétegenkénti elemek számát, hogy lássuk, ki tudunk-e szorítani kisebb teszthibát.
+
+###4.3.5 Előrejelzések generálása új adatokra
+
+Amikor a bináris osztályozási modellünkön a `predict()` függvényt meghívtuk, minden bemeneti mintára 0 és 1 közötti skaláris pontszámot kaptunk. A többosztályos osztályozási modellünkkel minden egyes mintához lekértük az összes osztályra vonatkozó valószínűségi eloszlást. Most ezzel a skaláris regressziós modellel a `predict()` visszaadja a modell által a minta árára vonatkozó tippet ezer dollárban mérve:
+
+```
+>>> predictions = model.predict(test_data)
+>>> predictions[0]
+array([9.990133], dtype=float32)
+```
+A tesztkészlet első házának ára az előrejelzések szerint körülbelül 10 000 dollár lesz.
+
+###4.3.6 Összefoglalás
+
+A következőket érdemes levonni ebből a skaláris regressziós példából:
+* A regresszió más veszteségfüggvényekkel történik, mint amit az osztályozásnál használtunk. Az átlagos négyzetes hiba (MSE) egy olyan veszteségfüggvény, amelyet gyakran használnak a regresszióhoz.
+* Hasonlóképpen, a regresszióhoz használandó értékelési mérőszámok eltérnek az osztályozáshoz használtaktól; természetesen a pontosság fogalma nem vonatkozik a regresszióra. Az általános regressziós mérőszám az átlagos abszolút hiba (MAE).
+* Ha a bemeneti adatok jellemzőinek értékei különböző tartományban vannak, minden jellemzőt egymástól függetlenül kell skálázni előfeldolgozási lépésként.
+* Ha kevés adat áll rendelkezésre, a K-szoros validálás nagyszerű módja a modell megbízható értékelésének.
+* Ha kevés betanítási adat áll rendelkezésre, a súlyos túltanulás elkerülése érdekében célszerű egy kis modellt használni kevés köztes réteggel (általában csak eggyel vagy kettővel).
+
+## **Összegzés**
+* A vektoradatokon végzett gépi tanulási feladatok három leggyakoribb típusa a bináris osztályozás, a többosztályos osztályozás és a skaláris regresszió.
+    * – A fejezet korábbi „Összefoglaló” részei összefoglalják azokat a fontos tudnivalókat, amelyeket az egyes feladatok kapcsán tanult meg.
+    * – A regresszió más veszteségfüggvényeket és más értékelési mérőszámokat használ, mint az osztályozás.
+* Általában előfeldolgoznia kell a nyers adatokat, mielőtt betáplálja azokat egy neurális hálózatba.
+* Ha az adatok különböző tartományú jellemzőkkel rendelkeznek, az előfeldolgozás részeként az egyes jellemzőket egymástól függetlenül skálázni kell.
+* A képzés előrehaladtával a neurális hálózatok végül elkezdenek túltanulni, és rosszabb eredményeket érnek el soha nem látott adatokon.
+* Ha nem rendelkezik sok betanítási adattal, használjon kis modellt csak egy vagy két köztes réteggel, hogy elkerülje a súlyos túltanulást.
+* Ha adatai több kategóriába vannak felosztva, információs szűk keresztmetszeteket okozhat, ha túl kicsivé teszi a köztes rétegeket.
+* Ha kevés adattal dolgozik, a K-szoros validálás segíthet a modell megbízható értékelésében.
