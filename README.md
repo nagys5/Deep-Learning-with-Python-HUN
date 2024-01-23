@@ -12,7 +12,9 @@
 
 [3. fejezet](chapter03.md)
 
-[4. fejezet (eleje)](chapter04.md)
+[4. fejezet](chapter04.md)
+
+[5. fejezet (eleje)](chapter05.md)
 
 [8. fejezet](chapter08.md)
 
@@ -46,5 +48,5 @@ Dr. Kutor László prezentációi (Intelligens Rendszerek Elmélete 1-10)
 
 Dr. Kutor László [YouTube videói](https://www.youtube.com/playlist?list=PLSBcNSXgMqrfme530QKqLGJBqt8HN0sCd) (18 db) Óbudai Egyetem, 2016.
 
-[Fogalomtár](https://web.archive.org/web/20221202163258/https://mialmanach.mit.bme.hu/fogalomtar)
+[Fogalomtár](https://web.archive.org/web/20221202163258/https://mialmanach.mit.bme.hu/fogalomtar) 1286 címszó kifejtve
 
