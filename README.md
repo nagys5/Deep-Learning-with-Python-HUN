@@ -50,3 +50,4 @@ Dr. Kutor László [YouTube videói](https://www.youtube.com/playlist?list=PLSBc
 
 [Fogalomtár](https://web.archive.org/web/20221202163258/https://mialmanach.mit.bme.hu/fogalomtar) 1286 címszó kifejtve
 
+[MI Almanach](http://project.mit.bme.hu/mi_almanach/) - úgy tűnik félbemaradt
