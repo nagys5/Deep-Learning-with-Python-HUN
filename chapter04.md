@@ -441,7 +441,7 @@ y_train = to_categorical(train_labels)
 y_test = to_categorical(test_labels)
 ```
 
-###4.2.3 A modell elkészítése
+### 4.2.3 A modell elkészítése
 
 Ez a témabesorolási probléma hasonlít az előző filmkritika besorolási problémájához: mindkét esetben rövid szövegrészleteket próbálunk besorolni. De itt van egy új megszorítás: a kimeneti osztályok száma 2-ről 46-ra nőtt. A kimeneti tér dimenziója/mérete sokkal nagyobb.
 
@@ -477,7 +477,7 @@ model.compile(optimizer="rmsprop",
               metrics=["accuracy"])
 ```
 
-###4.2.4 A megközelítés kiértékelése
+### 4.2.4 A megközelítés kiértékelése
 
 Válasszunk ki 1000 mintát a betanítási adatokból, amelyeket kiértékelési halmazként használunk.
 
@@ -585,7 +585,7 @@ Ez a megközelítés eléri a ~80%-os pontosságot. Egy kiegyensúlyozott binár
 ```
 Amint látható, egy véletlenszerű osztályozó 19% körüli osztályozási pontosságot érne el, így a modellünk eredményei ebben a megvilágításban elég jónak tűnnek.
 
-###4.2.5 Előrejelzések generálása új adatokra
+### 4.2.5 Előrejelzések generálása új adatokra
 
 A modell `predict` metódusának meghívása új mintákra osztályvalószínűségi eloszlást ad vissza mind a 46 témára mindegyik mintánál. Készítsünk téma előrejelzéseket az összes tesztadathoz:
 
@@ -613,7 +613,7 @@ A legnagyobb bejegyzés az előrejelzett osztály – a legnagyobb valószínűs
 4
 ```
 
-###4.2.6 A címkék és a veszteség kezelésének másik módja
+### 4.2.6 A címkék és a veszteség kezelésének másik módja
 
 Korábban említettük, hogy a címkék kódolásának másik módja az lenne, ha egész tenzorként öntnénk őket, például:
 
@@ -631,7 +631,7 @@ model.compile(optimizer="rmsprop",
 ```
 Ez az új veszteségfüggvény matematikailag továbbra is ugyanaz, mint a `categorical_crossentropy`; csak más a felülete.
 
-###4.2.7 A kellően nagy köztes rétegek fontossága
+### 4.2.7 A kellően nagy köztes rétegek fontossága
 
 Korábban említettük, hogy mivel a végső kimenet 46 dimenziós, kerüljük a 46-nál kevesebb egységet tartalmazó köztes rétegeket. Most pedig nézzük meg, mi történik, ha bevezetünk egy információs szűk keresztmetszetet azáltal, hogy olyan közbenső rétegeket alkalmazunk, amelyek lényegesen kisebbek, mint 46 dimenziós: például 4 dimenziós.
 
@@ -656,13 +656,13 @@ model.fit(partial_x_train,
 
 A modell most ~71%-os kiértékelési pontossággal tetőzik, ami 8%-os abszolút csökkenést jelent. Ez a visszaesés leginkább annak tudható be, hogy sok információt (elegendő információt a 46 osztály elválasztási hipersíkjainak helyreállításához) próbálunk egy túl kevés dimenziójú köztes térbe tömöríteni. A modell a legtöbb szükséges információt be tudja zsúfolni ezekbe a négydimenziós reprezentációkba, de nem az összeset.
 
-###4.2.8 További kísérletek
+### 4.2.8 További kísérletek
 
 Az előző példához hasonlóan arra bátorítom önt, hogy próbálja ki a következő kísérleteket, hogy fejlessze a megérzését azzal kapcsolatban, hogy milyen konfigurációs döntéseket kell meghoznia az ilyen modelleknél:
 * Próbáljon meg nagyobb vagy kisebb rétegeket használni: 32 egység, 128 egység stb.
 * Az előbb két köztes réteget használt a végső softmax osztályozási réteg előtt. Most próbáljon meg egyetlen köztes réteget vagy három köztes réteget használni.
 
-###4.2.9 Összefoglalás
+### 4.2.9 Összefoglalás
 
 A következőket érdemes levonni ebből a példából:
 * Ha az adatpontokat _N_ osztályba próbálja besorolni, a modellnek egy _N_ méretű `Dense` réteggel kell végződnie.
@@ -673,14 +673,14 @@ A következőket érdemes levonni ebből a példából:
     * – A címkék egész számként történő kódolása és a `sparse_categorical_crossentropy` loss függvény használata
 * Ha az adatokat nagyszámú kategóriába kell besorolni, akkor kerülje el, hogy a túl kicsi köztes rétegek miatt információs szűk keresztmetszetek jöjjenek létre a modellben.
 
-##4.3 Lakásárak előrejelzése: egy regressziós példa
+## 4.3 Lakásárak előrejelzése: egy regressziós példa
 
 Az előző két példát osztályozási problémának tekintettük, ahol a cél egy bemeneti adatpont egyetlen diszkrét címkéjének előrejelzése volt. A gépi tanulási probléma másik gyakori típusa a regresszió, amely egy folytonos érték előrejelzéséből áll a diszkrét címke helyett: például a holnapi hőmérséklet előrejelzése, meteorológiai adatok vagy egy szoftverprojekt befejezési idejének előrejelzése a specifikációi alapján.
 
 MEGJEGYZÉS
 >Ne keverje össze a _regressziót_ és a _logisztikus regressziós_ algoritmust. Zavarba ejtő az, hogy a logisztikus regresszió nem egy regressziós algoritmus, hanem egy osztályozási algoritmus.
 
-###4.3.1 A bostoni lakásárak adathalmaza
+### 4.3.1 A bostoni lakásárak adathalmaza
 
 Ebben a részben megpróbáljuk megjósolni a lakások medián árát egy adott Boston külvárosban az 1970-es évek közepén, a külvárosra vonatkozó akkori adatpontok alapján, mint például a bűnözési ráta, a helyi ingatlanadó kulcsa és így tovább. Az általunk használt adatkészlet érdekes eltérést mutat az előző két példához képest. Viszonylag kevés adatponttal rendelkezik: csak 506, elosztva 404 tanítási minta és 102 tesztminta között. És a bemeneti adatok minden jellemzője (például a bűnözési ráta) más-más léptékű. Például egyes értékek arányok, amelyek 0 és 1 közötti értékeket vesznek fel, mások 1 és 12 közötti értékeket, mások 0 és 100 közötti értékeket és így tovább.
 
@@ -713,7 +713,7 @@ A célok a saját tulajdonú házak mediánértékei, több ezer dollárban:
 
 Az árak általában 10 000 és 50 000 dollár között mozognak. Ha ez olcsónak hangzik, ne feledje, hogy ez az 1970-es évek közepe volt, és ezek az árak nincsenek az inflációhoz igazítva.
 
-###4.3.2 Az adatok előkészítése
+### 4.3.2 Az adatok előkészítése
 
 Problémás lenne olyan értékeket betáplálni egy neurális hálózatba, amelyek mindegyike vadul eltérő tartományt vesz fel. A modell képes lehet automatikusan alkalmazkodni az ilyen heterogén adatokhoz, de mindenképpen megnehezítené a tanulást. Az ilyen adatok kezelésére általánosan elterjedt bevált gyakorlat a jellemzők szerinti normalizálás: a bemeneti adatok minden egyes jellemzőjéhez (a bemeneti adatmátrix egy oszlopához) kivonjuk a jellemző átlagát, és elosztjuk a szórással, így a jellemző 0 körül van, és egységnyi szórása van. Ez egyszerűen megtehető a NumPy-ban.
 
@@ -731,7 +731,7 @@ test_data /= std
 
 Jegyezze meg, hogy a tesztadatok normalizálására használt mennyiségek a betanítási adatok felhasználásával kerülnek kiszámításra. Soha ne használjon a munkafolyamatban a tesztadatokon kiszámított mennyiséget, még olyan egyszerű műveleteknél sem, mint az adatok normalizálása.
 
-###4.3.3 A modell felépítése
+### 4.3.3 A modell felépítése
 
 Mivel nagyon kevés minta áll rendelkezésre, egy nagyon kicsi modellt fogunk használni, két köztes réteggel, mindegyikben 64 elemmel. Általánosságban elmondható, hogy minél kevesebb betanítási adatunk van, annál erősebb lesz a túltanulás, és egy kis modell használata az egyik módja a túltanulás csökkentésének.
 
@@ -756,7 +756,7 @@ Vegye észre, hogy a modellt az `mse` veszteségfüggvénnyel állítjuk össze 
 
 A betanítás során egy új mérőszámot is figyelünk: az átlagos abszolút hibát (MAE). Ez az előrejelzések és a célok közötti különbség abszolút értéke. Például a 0,5 MAE ennél a problémánál azt jelenti, hogy az előrejelzései átlagosan 500 dollárral kisebbek.
 
-###4.3.4 A megközelítés kiértékelése K-szoros kiértékeléssel
+### 4.3.4 A megközelítés kiértékelése K-szoros kiértékeléssel
 
 Modellünk értékeléséhez, miközben folyamatosan módosítjuk a paramétereit (például a betanításhoz használt korszakok számát), feloszthatjuk az adatokat egy betanítási halmazra és egy kiértékelési halmazra, ahogy az előző példákban tettük. De mivel olyan kevés adatpontunk van, az érvényesítési halmaz végül nagyon kicsi lesz (például körülbelül 100 példa). Ennek következtében a validálási pontszámok nagymértékben változhatnak attól függően, hogy melyik adatpontot választottuk kiértékeléshez, és melyiket választottuk a képzéshez: a validációs pontszámok nagy eltérést mutathatnak a validációs felosztás tekintetében. Ez megakadályozná, hogy megbízhatóan értékeljük modellünket.
 
@@ -901,7 +901,7 @@ test_mse_score, test_mae_score = model.evaluate(test_data, test_targets)
 ```
 Még mindig 2500 dollár alatt vagyunk. Ez javulás! Csakúgy, mint az előző két feladatnál, itt is megpróbálhatjuk megváltoztatni a modellben lévő rétegek számát vagy a rétegenkénti elemek számát, hogy lássuk, ki tudunk-e szorítani kisebb teszthibát.
 
-###4.3.5 Előrejelzések generálása új adatokra
+### 4.3.5 Előrejelzések generálása új adatokra
 
 Amikor a bináris osztályozási modellünkön a `predict()` függvényt meghívtuk, minden bemeneti mintára 0 és 1 közötti skaláris pontszámot kaptunk. A többosztályos osztályozási modellünkkel minden egyes mintához lekértük az összes osztályra vonatkozó valószínűségi eloszlást. Most ezzel a skaláris regressziós modellel a `predict()` visszaadja a modell által a minta árára vonatkozó tippet ezer dollárban mérve:
 
@@ -912,7 +912,7 @@ array([9.990133], dtype=float32)
 ```
 A tesztkészlet első házának ára az előrejelzések szerint körülbelül 10 000 dollár lesz.
 
-###4.3.6 Összefoglalás
+### 4.3.6 Összefoglalás
 
 A következőket érdemes levonni ebből a skaláris regressziós példából:
 * A regresszió más veszteségfüggvényekkel történik, mint amit az osztályozásnál használtunk. Az átlagos négyzetes hiba (MSE) egy olyan veszteségfüggvény, amelyet gyakran használnak a regresszióhoz.
