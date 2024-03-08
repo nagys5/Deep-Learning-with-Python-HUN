@@ -1173,9 +1173,14 @@ Pozitívum, hogy a modern mélytanulási technikák kihasználásával a verseny
 
 Most már szilárd eszközkészlettel rendelkezik a képosztályozási problémák kezelésére – különösen a kis adathalmazok esetében.
 
-# **Összegzés**
+## **Összegzés**
 * A convnet a gépi tanulási modellek legjobb típusa gépi látási feladatokhoz. Még egy nagyon kis adatkészleten is a nulláról be lehet tanítani, megfelelő eredménnyel.
 * A convnet moduláris minták és fogalmak hierarchiájának elsajátításával működik a vizuális világ megjelenítésére.
 * Kis adathalmaznál a túltanulás lesz a fő probléma. Az adatbővítés hatékony módja a túltanulás elleni küzdelemnek, amikor képadatokkal dolgozunk.
 * Könnyű újrafelhasználni egy meglévő convnetet egy új adatkészleten a jellemzők kinyerésével. Ez egy értékes technika kis képadathalmazokkal való munkavégzéshez.
 * A jellemzők kinyerése kiegészítéseként használhatunk finomhangolást, amely egy új problémához átvesz a meglévő modell által korábban megtanult egyes beállításokat. Ez egy kicsit tovább növeli a teljesítményt.
+
+
+```python
+
+```

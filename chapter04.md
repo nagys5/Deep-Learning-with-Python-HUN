@@ -1,4 +1,6 @@
-# **4. Ismerkedés a neurális hálózatokkal: Osztályozás és regresszió**
+# __4. Ismerkedés a neurális hálózatokkal:*__
+
+## * __Osztályozás és regresszió__
 
 Ez a fejezet ezekkel foglalkozik:
 * Az első példák a valós gépi tanulási munkafolyamatokra
