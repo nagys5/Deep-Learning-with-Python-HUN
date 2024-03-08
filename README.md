@@ -1,4 +1,4 @@
-## Mesterséges intelligencia könyv
+# Mesterséges intelligencia könyv
 *François Chollet - Deep Learning with Python (2021) 2nd Ed*
 
 ### A szerzőről
